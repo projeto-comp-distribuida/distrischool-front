@@ -136,7 +136,7 @@ services:
 
   # Microserviço Auth - Ambiente de Desenvolvimento com Hot Reloading
   microservice-auth-dev:
-    image: ${ACR_REGISTRY}/distrischool-auth-service:latest
+    image: ${ACR_REGISTRY}/microservice-auth:latest
     container_name: distrischool-microservice-auth-dev
     depends_on:
       postgres:
@@ -196,7 +196,7 @@ services:
 
   # Microserviço Student Management - Ambiente de Desenvolvimento com Hot Reloading
   student-management-service-dev:
-    image: ${ACR_REGISTRY}/student-management-service:latest
+    image: ${ACR_REGISTRY}/microservice-student-management-service:latest
     container_name: student-management-service-dev
     depends_on:
       postgres:
@@ -240,7 +240,7 @@ services:
 
   # Microserviço TEACHER - Ambiente de Desenvolvimento com Hot Reloading
   microservice-teacher-dev:
-    image: ${ACR_REGISTRY}/microservice-teacher-service:latest
+    image: ${ACR_REGISTRY}/microservice-teacher-management-service:latest
     container_name: microservice-teacher-dev
     depends_on:
       postgres:
