@@ -132,7 +132,7 @@ services:
     depends_on:
       - microservice-auth-dev
       - student-management-service-dev
-      - microservice-TEACHER-dev
+      - microservice-teacher-dev
 
   # Microserviço Auth - Ambiente de Desenvolvimento com Hot Reloading
   microservice-auth-dev:
