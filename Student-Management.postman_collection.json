@@ -1,0 +1,486 @@
+{
+	"info": {
+		"_postman_id": "student-management-collection",
+		"name": "Student Management API",
+		"description": "Comprehensive API collection for managing students in the DistriSchool system",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Student CRUD Operations",
+			"item": [
+				{
+					"name": "Create Student",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}",
+								"description": "User ID performing the action"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fullName\": \"João Silva Santos\",\n  \"cpf\": \"12345678901\",\n  \"email\": \"joao.silva@email.com\",\n  \"phone\": \"85999999999\",\n  \"birthDate\": \"2000-05-15\",\n  \"course\": \"Engenharia de Software\",\n  \"semester\": 6,\n  \"enrollmentDate\": \"2024-01-15\",\n  \"status\": \"ACTIVE\",\n  \"addressStreet\": \"Rua das Flores\",\n  \"addressNumber\": \"123\",\n  \"addressComplement\": \"Apto 101\",\n  \"addressNeighborhood\": \"Centro\",\n  \"addressCity\": \"Fortaleza\",\n  \"addressState\": \"CE\",\n  \"addressZipcode\": \"60000000\",\n  \"emergencyContactName\": \"Maria Silva Santos\",\n  \"emergencyContactPhone\": \"85888888888\",\n  \"emergencyContactRelationship\": \"Mãe\",\n  \"notes\": \"Aluno dedicado e pontual\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/students",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"students"
+							]
+						},
+						"description": "Creates a new student in the system"
+					}
+				},
+				{
+					"name": "Get Student by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/students/{{studentId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"students",
+								"{{studentId}}"
+							]
+						},
+						"description": "Retrieves a specific student by their ID"
+					}
+				},
+				{
+					"name": "Get Student by Registration Number",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/students/registration/{{registrationNumber}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"students",
+								"registration",
+								"{{registrationNumber}}"
+							]
+						},
+						"description": "Retrieves a student by their registration number"
+					}
+				},
+				{
+					"name": "Update Student",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fullName\": \"João Silva Santos Junior\",\n  \"cpf\": \"12345678901\",\n  \"email\": \"joao.silva.jr@email.com\",\n  \"phone\": \"85988888888\",\n  \"birthDate\": \"2000-05-15\",\n  \"course\": \"Engenharia de Software\",\n  \"semester\": 7,\n  \"enrollmentDate\": \"2024-01-15\",\n  \"status\": \"ACTIVE\",\n  \"addressStreet\": \"Rua das Flores\",\n  \"addressNumber\": \"456\",\n  \"addressComplement\": \"Apto 201\",\n  \"addressNeighborhood\": \"Centro\",\n  \"addressCity\": \"Fortaleza\",\n  \"addressState\": \"CE\",\n  \"addressZipcode\": \"60000001\",\n  \"emergencyContactName\": \"Maria Silva Santos\",\n  \"emergencyContactPhone\": \"85888888888\",\n  \"emergencyContactRelationship\": \"Mãe\",\n  \"notes\": \"Aluno dedicado e pontual - atualizado\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/students/{{studentId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"students",
+								"{{studentId}}"
+							]
+						},
+						"description": "Updates an existing student's information"
+					}
+				},
+				{
+					"name": "Delete Student",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/students/{{studentId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"students",
+								"{{studentId}}"
+							]
+						},
+						"description": "Soft deletes a student from the system"
+					}
+				},
+				{
+					"name": "Restore Student",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/students/{{studentId}}/restore",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"students",
+								"{{studentId}}",
+								"restore"
+							]
+						},
+						"description": "Restores a previously deleted student"
+					}
+				}
+			]
+		},
+		{
+			"name": "Student Status Management",
+			"item": [
+				{
+					"name": "Update Student Status",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "X-User-Id",
+								"value": "{{userId}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/students/{{studentId}}/status?status=INACTIVE",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"students",
+								"{{studentId}}",
+								"status"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "INACTIVE",
+									"description": "Student status: ACTIVE, INACTIVE, GRADUATED, SUSPENDED"
+								}
+							]
+						},
+						"description": "Updates the status of a specific student"
+					}
+				}
+			]
+		},
+		{
+			"name": "Student Search & Listing",
+			"item": [
+				{
+					"name": "Get All Students (Paginated)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/students?page=0&size=20&sortBy=id&direction=ASC",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"students"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Page number (0-based)"
+								},
+								{
+									"key": "size",
+									"value": "20",
+									"description": "Number of items per page"
+								},
+								{
+									"key": "sortBy",
+									"value": "id",
+									"description": "Field to sort by"
+								},
+								{
+									"key": "direction",
+									"value": "ASC",
+									"description": "Sort direction: ASC or DESC"
+								}
+							]
+						},
+						"description": "Retrieves all students with pagination support"
+					}
+				},
+				{
+					"name": "Search Students with Filters",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/students/search?name=João&course=Engenharia&semester=6&status=ACTIVE&page=0&size=20&sortBy=fullName&direction=ASC",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"students",
+								"search"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "João",
+									"description": "Filter by student name (optional)"
+								},
+								{
+									"key": "course",
+									"value": "Engenharia",
+									"description": "Filter by course name (optional)"
+								},
+								{
+									"key": "semester",
+									"value": "6",
+									"description": "Filter by semester (optional)"
+								},
+								{
+									"key": "status",
+									"value": "ACTIVE",
+									"description": "Filter by status: ACTIVE, INACTIVE, GRADUATED, SUSPENDED (optional)"
+								},
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Page number (0-based)"
+								},
+								{
+									"key": "size",
+									"value": "20",
+									"description": "Number of items per page"
+								},
+								{
+									"key": "sortBy",
+									"value": "fullName",
+									"description": "Field to sort by"
+								},
+								{
+									"key": "direction",
+									"value": "ASC",
+									"description": "Sort direction: ASC or DESC"
+								}
+							]
+						},
+						"description": "Searches students with multiple filter options"
+					}
+				},
+				{
+					"name": "Get Students by Course",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/students/course/{{courseName}}?page=0&size=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"students",
+								"course",
+								"{{courseName}}"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Page number (0-based)"
+								},
+								{
+									"key": "size",
+									"value": "20",
+									"description": "Number of items per page"
+								}
+							]
+						},
+						"description": "Retrieves all students enrolled in a specific course"
+					}
+				},
+				{
+					"name": "Get Students by Course and Semester",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/students/course/{{courseName}}/semester/{{semester}}?page=0&size=20",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"students",
+								"course",
+								"{{courseName}}",
+								"semester",
+								"{{semester}}"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "0",
+									"description": "Page number (0-based)"
+								},
+								{
+									"key": "size",
+									"value": "20",
+									"description": "Number of items per page"
+								}
+							]
+						},
+						"description": "Retrieves students by specific course and semester"
+					}
+				}
+			]
+		},
+		{
+			"name": "Student Statistics",
+			"item": [
+				{
+					"name": "Get Student Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/students/statistics",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"students",
+								"statistics"
+							]
+						},
+						"description": "Retrieves general statistics about students (active, inactive, graduated, suspended counts)"
+					}
+				},
+				{
+					"name": "Count Students by Course",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/students/count/course/{{courseName}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"students",
+								"count",
+								"course",
+								"{{courseName}}"
+							]
+						},
+						"description": "Counts the number of students enrolled in a specific course"
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "admin-user",
+			"type": "string"
+		},
+		{
+			"key": "studentId",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "registrationNumber",
+			"value": "2024001",
+			"type": "string"
+		},
+		{
+			"key": "courseName",
+			"value": "Engenharia de Software",
+			"type": "string"
+		},
+		{
+			"key": "semester",
+			"value": "6",
+			"type": "string"
+		}
+	]
+}
