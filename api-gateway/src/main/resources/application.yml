@@ -1,0 +1,79 @@
+# Server Configuration
+server:
+  port: 8080
+
+# Spring Configuration
+spring:
+  application:
+    name: api-gateway
+  
+  profiles:
+    active: dev
+  
+  cloud:
+    gateway:
+      # Global CORS configuration
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origins: 
+              - "http://localhost:3000"
+              - "http://localhost:5173"
+            allowed-methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowed-headers: "*"
+            allow-credentials: true
+            max-age: 3600
+      
+      # Route definitions
+      routes:
+        # Auth Service Route
+        - id: auth-service
+          uri: http://microservice-auth-dev:8080
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - StripPrefix=2
+        
+        # Student Service Route
+        - id: student-service
+          uri: http://student-management-service-dev:8080
+          predicates:
+            - Path=/api/students/**
+          filters:
+            - StripPrefix=2
+        
+        # Teacher Service Route
+        - id: teacher-service
+          uri: http://microservice-teacher-dev:8080
+          predicates:
+            - Path=/api/teachers/**
+          filters:
+            - StripPrefix=2
+      
+      # Default filters applied to all routes
+      default-filters:
+        - AddRequestHeader=X-Gateway-Source, api-gateway
+
+# Management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway
+  endpoint:
+    health:
+      show-details: always
+
+# Logging configuration
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web.reactive: DEBUG
+    reactor.netty: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
