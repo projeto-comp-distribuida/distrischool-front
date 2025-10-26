@@ -107,9 +107,7 @@ services:
 
   # Spring Cloud Gateway - API Gateway Service
   api-gateway-dev:
-    build:
-      context: ./api-gateway
-      dockerfile: Dockerfile
+    image: ${ACR_REGISTRY}/api-gateway:latest
     container_name: distrischool-api-gateway-dev
     ports:
       - "8080:8080"
@@ -140,33 +138,6 @@ services:
       - microservice-auth-dev
       - student-management-service-dev
       - microservice-teacher-dev
-
-  # Frontend Next.js - Ambiente de Desenvolvimento com Hot Reloading
-  frontend-dev:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: dev
-    container_name: distrischool-frontend-dev
-    ports:
-      - "3000:3000"
-    environment:
-      NODE_ENV: development
-      NEXT_PUBLIC_API_URL: http://localhost:8080
-      NEXT_PUBLIC_AUTH_SERVICE_URL: http://localhost:8080/api/auth
-      NEXT_PUBLIC_STUDENT_SERVICE_URL: http://localhost:8080/api/students
-      NEXT_PUBLIC_TEACHER_SERVICE_URL: http://localhost:8080/api/teachers
-    volumes:
-      # Monta o código fonte para hot reloading
-      - .:/app:rw
-      # Cache do pnpm para não baixar dependências toda vez
-      - pnpm-cache:/root/.local/share/pnpm
-      # Exclui node_modules para usar o do container
-      - /app/node_modules
-    networks:
-      - distrischool-network
-    depends_on:
-      - api-gateway-dev
 
   # Microserviço Auth - Ambiente de Desenvolvimento com Hot Reloading
   microservice-auth-dev:
@@ -322,8 +293,6 @@ networks:
 
 volumes:
   maven-cache:
-    driver: local
-  pnpm-cache:
     driver: local
   postgres_data:
     driver: local
