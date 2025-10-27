@@ -13,7 +13,7 @@ import type {
 import type { ApiResponse } from '@/types/auth.types';
 
 export class StudentService {
-  private basePath = '/api/v1/students';
+  private basePath = '/api/students';
 
   /**
    * Get all students with pagination

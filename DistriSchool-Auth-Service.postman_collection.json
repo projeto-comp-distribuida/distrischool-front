@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "distrischool-auth-service",
 		"name": "DistriSchool Auth Service",
-		"description": "Collection for testing the DistriSchool Authentication Microservice API endpoints.\n\n## Base URL\n- Development: http://localhost:8080\n- Production: https://api.distrischool.com\n\n## Authentication\nThis service uses JWT Bearer tokens for authentication. After login, use the token in the Authorization header:\n`Authorization: Bearer <your-jwt-token>`\n\n## User Roles\n- ADMIN: Administrador do Sistema\n- TEACHER: Professor\n- STUDENT: Estudante/Aluno\n- PARENT: Pai/Responsável\n\n## Environment Variables\n- `baseUrl`: Base URL for the API (default: http://localhost:8080)\n- `authToken`: JWT token for authenticated requests\n- `userId`: User ID for testing user-specific endpoints",
+		"description": "Collection for testing the DistriSchool Authentication Microservice API endpoints.\n\n## Base URL\n- Development: http://192.168.1.7:8080\n- Production: https://api.distrischool.com\n\n## Authentication\nThis service uses JWT Bearer tokens for authentication. After login, use the token in the Authorization header:\n`Authorization: Bearer <your-jwt-token>`\n\n## User Roles\n- ADMIN: Administrador do Sistema\n- TEACHER: Professor\n- STUDENT: Estudante/Aluno\n- PARENT: Pai/Responsável\n\n## Environment Variables\n- `baseUrl`: Base URL for the API (default: http://192.168.1.7:8080)\n- `authToken`: JWT token for authenticated requests\n- `userId`: User ID for testing user-specific endpoints",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -645,7 +645,7 @@
 				"exec": [
 					"// Set default base URL if not already set",
 					"if (!pm.environment.get('baseUrl')) {",
-					"    pm.environment.set('baseUrl', 'http://localhost:8080');",
+					"    pm.environment.set('baseUrl', 'http://192.168.1.7:8080');",
 					"}"
 				]
 			}
@@ -687,7 +687,7 @@
 	"variable": [
 		{
 			"key": "baseUrl",
-			"value": "http://localhost:8080",
+			"value": "http://192.168.1.7:8080",
 			"type": "string"
 		}
 	]

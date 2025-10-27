@@ -16,8 +16,8 @@ import type {
 import type { ApiResponse } from '@/types/auth.types';
 
 export class TeacherService {
-  private basePath = '/api/v1/teachers';
-  private managementPath = '/api/v1/teacher-management';
+  private basePath = '/api/teachers';
+  private managementPath = '/api/teacher-management';
 
   // ==================== Basic CRUD Operations ====================
 

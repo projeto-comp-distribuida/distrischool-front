@@ -1,8 +1,7 @@
 // Base API Client for DistriSchool
 
-// Usando porta direta do auth service temporariamente (8081)
-// TODO: Configurar API Gateway corretamente para usar porta 8080
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081';
+// Using API Gateway on port 8080
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.7:8080';
 
 export interface ApiConfig {
   headers?: Record<string, string>;
@@ -75,7 +74,7 @@ class ApiClient {
       return this.handleResponse<T>(response);
     } catch (error) {
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('Não foi possível conectar ao servidor. Verifique se o microserviço de autenticação está rodando em http://localhost:8081');
+        throw new Error('Não foi possível conectar ao servidor. Verifique se o API Gateway está rodando em http://192.168.1.7:8080');
       }
       throw error;
     }
@@ -94,7 +93,7 @@ class ApiClient {
       return this.handleResponse<T>(response);
     } catch (error) {
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('Não foi possível conectar ao servidor. Verifique se o microserviço de autenticação está rodando em http://localhost:8081');
+        throw new Error('Não foi possível conectar ao servidor. Verifique se o API Gateway está rodando em http://192.168.1.7:8080');
       }
       throw error;
     }
@@ -113,7 +112,7 @@ class ApiClient {
       return this.handleResponse<T>(response);
     } catch (error) {
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('Não foi possível conectar ao servidor. Verifique se o microserviço de autenticação está rodando em http://localhost:8081');
+        throw new Error('Não foi possível conectar ao servidor. Verifique se o API Gateway está rodando em http://192.168.1.7:8080');
       }
       throw error;
     }
@@ -132,7 +131,7 @@ class ApiClient {
       return this.handleResponse<T>(response);
     } catch (error) {
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('Não foi possível conectar ao servidor. Verifique se o microserviço de autenticação está rodando em http://localhost:8081');
+        throw new Error('Não foi possível conectar ao servidor. Verifique se o API Gateway está rodando em http://192.168.1.7:8080');
       }
       throw error;
     }
@@ -150,7 +149,7 @@ class ApiClient {
       return this.handleResponse<T>(response);
     } catch (error) {
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('Não foi possível conectar ao servidor. Verifique se o microserviço de autenticação está rodando em http://localhost:8081');
+        throw new Error('Não foi possível conectar ao servidor. Verifique se o API Gateway está rodando em http://192.168.1.7:8080');
       }
       throw error;
     }

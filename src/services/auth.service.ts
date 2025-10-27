@@ -62,6 +62,7 @@ export class AuthService {
     if (typeof window !== 'undefined') {
       const cachedUser = localStorage.getItem('currentUser');
       if (cachedUser) {
+        console.log('🔍 [AuthService] Returning cached user:', JSON.parse(cachedUser));
         return JSON.parse(cachedUser);
       }
     }
@@ -80,11 +81,16 @@ export class AuthService {
       throw new Error('Invalid token format');
     }
 
+    console.log('🔍 [AuthService] Fetching user from API for userId:', userId);
     const response = await apiClient.get<ApiResponse<User>>(
       `/api/v1/users/${userId}`
     );
 
+    console.log('🔍 [AuthService] API response:', response);
+
     if (response.data) {
+      console.log('🔍 [AuthService] User emailVerified status:', response.data.emailVerified || 'not returned by API');
+      console.log('🔍 [AuthService] User active status:', response.data.active);
       // Cache user in localStorage
       if (typeof window !== 'undefined') {
         localStorage.setItem('currentUser', JSON.stringify(response.data));

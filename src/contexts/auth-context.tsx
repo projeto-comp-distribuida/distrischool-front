@@ -93,6 +93,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = useCallback(async () => {
     try {
+      // Clear cached user to force fresh fetch
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('currentUser');
+        console.log('🗑️ Cleared cached user data');
+      }
+      
       const currentUser = await authService.getCurrentUser();
       setUser(currentUser);
       

@@ -1,15 +1,37 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { BookOpen, Users, GraduationCap, LogOut } from "lucide-react"
+import { BookOpen, Users, GraduationCap, LogOut, RefreshCw } from "lucide-react"
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { user, isLoading, isAuthenticated, logout } = useAuth()
+  const { user, isLoading, isAuthenticated, logout, refreshUser } = useAuth()
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const handleRefreshUser = async () => {
+    setIsRefreshing(true)
+    try {
+      console.log('🔄 Refreshing user data...')
+      await refreshUser()
+      console.log('✅ User data refreshed!')
+    } catch (error) {
+      console.error('❌ Failed to refresh user:', error)
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+  
+  const handleDebugInfo = () => {
+    console.log('=== DEBUG INFO ===')
+    console.log('User from context:', user)
+    console.log('localStorage currentUser:', localStorage.getItem('currentUser'))
+    console.log('localStorage authToken:', localStorage.getItem('authToken'))
+    console.log('==================')
+  }
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -128,7 +150,26 @@ export default function DashboardPage() {
         {/* User Info Card */}
         <Card className="mt-8">
           <CardHeader>
-            <CardTitle>Informações da Conta</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Informações da Conta</CardTitle>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleRefreshUser}
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={handleDebugInfo}
+                >
+                  Debug
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -165,7 +206,7 @@ export default function DashboardPage() {
               <div>
                 <p className="text-sm text-muted-foreground">Email Verificado</p>
                 <p className="font-medium">
-                  {user.emailVerified ? (
+                  {(user.emailVerified !== undefined ? user.emailVerified : user.active) ? (
                     <span className="text-green-600">Sim</span>
                   ) : (
                     <span className="text-yellow-600">Pendente</span>

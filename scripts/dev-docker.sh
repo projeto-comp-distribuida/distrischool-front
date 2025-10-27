@@ -109,13 +109,13 @@ start_services() {
 show_urls() {
     echo ""
     print_status "Service URLs:"
-    echo "  Frontend:           http://localhost:3000"
-    echo "  Auth Service:       http://localhost:8081"
-    echo "  Student Service:    http://localhost:8082"
-    echo "  teacher Service:   http://localhost:8083"
-    echo "  Kafka UI:           http://localhost:8090"
-    echo "  PostgreSQL:         localhost:5434"
-    echo "  Redis:              localhost:6379"
+    echo "  Frontend:           http://192.168.1.7:3000"
+    echo "  Auth Service:       http://192.168.1.7:8081"
+    echo "  Student Service:    http://192.168.1.7:8082"
+    echo "  teacher Service:   http://192.168.1.7:8083"
+    echo "  Kafka UI:           http://192.168.1.7:8090"
+    echo "  PostgreSQL:         192.168.1.7:5434"
+    echo "  Redis:              192.168.1.7:6379"
     echo ""
 }
 

@@ -35,17 +35,19 @@ export interface RegisterResponse {
 export type UserRole = 'ADMIN' | 'TEACHER' | 'STUDENT' | 'PARENT';
 
 export interface User {
-  id: string;
+  id: string | number; // Can be string or number depending on backend
   email: string;
   firstName: string;
   lastName: string;
-  phone?: string;
-  documentNumber?: string;
+  phone?: string | null;
+  documentNumber?: string | null;
   roles: UserRole[];
-  emailVerified: boolean;
+  emailVerified?: boolean; // Optional - may not be returned by API
   active: boolean;
   createdAt: string;
   updatedAt: string;
+  auth0Id?: string; // Auth0 integration
+  lastLogin?: string;
 }
 
 export interface ApiResponse<T = any> {

@@ -10,7 +10,7 @@ const nextConfig = {
     unoptimized: true,
   },
   env: {
-    NEXT_PUBLIC_API_URL: 'http://localhost:8081',
+    NEXT_PUBLIC_API_URL: 'http://192.168.1.7:8080',
   },
 }
 

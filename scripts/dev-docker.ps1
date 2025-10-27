@@ -147,13 +147,13 @@ function Start-Services {
 function Show-Urls {
     Write-Host ""
     Write-Status "Service URLs:"
-    Write-Host "  Frontend:           http://localhost:3000"
-    Write-Host "  Auth Service:       http://localhost:8081"
-    Write-Host "  Student Service:    http://localhost:8082"
-    Write-Host "  teacher Service:   http://localhost:8083"
-    Write-Host "  Kafka UI:           http://localhost:8090"
-    Write-Host "  PostgreSQL:         localhost:5434"
-    Write-Host "  Redis:              localhost:6379"
+    Write-Host "  Frontend:           http://192.168.1.7:3000"
+    Write-Host "  Auth Service:       http://192.168.1.7:8081"
+    Write-Host "  Student Service:    http://192.168.1.7:8082"
+    Write-Host "  teacher Service:   http://192.168.1.7:8083"
+    Write-Host "  Kafka UI:           http://192.168.1.7:8090"
+    Write-Host "  PostgreSQL:         192.168.1.7:5434"
+    Write-Host "  Redis:              192.168.1.7:6379"
     Write-Host ""
 }
 

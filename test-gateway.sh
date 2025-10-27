@@ -48,7 +48,7 @@ fi
 # Wait for gateway to be ready
 echo -e "\n${YELLOW}Waiting for API Gateway to be ready...${NC}"
 for i in {1..30}; do
-    if curl -s http://localhost:8080/actuator/health > /dev/null 2>&1; then
+    if curl -s http://192.168.1.7:8080/actuator/health > /dev/null 2>&1; then
         echo -e "${GREEN}✅ API Gateway is ready!${NC}"
         break
     fi
@@ -60,20 +60,20 @@ done
 echo -e "\n${YELLOW}Testing API Gateway endpoints...${NC}"
 
 # Test actuator health endpoint
-test_endpoint "http://localhost:8080/actuator/health" "Gateway Health"
+test_endpoint "http://192.168.1.7:8080/actuator/health" "Gateway Health"
 
 # Test route endpoints (these will return 404 if services aren't running, but gateway should respond)
-test_endpoint "http://localhost:8080/api/auth/health" "Auth Service Route"
-test_endpoint "http://localhost:8080/api/students/health" "Student Service Route"
-test_endpoint "http://localhost:8080/api/teachers/health" "Teacher Service Route"
+test_endpoint "http://192.168.1.7:8080/api/auth/health" "Auth Service Route"
+test_endpoint "http://192.168.1.7:8080/api/students/health" "Student Service Route"
+test_endpoint "http://192.168.1.7:8080/api/teachers/health" "Teacher Service Route"
 
 # Test CORS
 echo -e "\n${YELLOW}Testing CORS configuration...${NC}"
-cors_response=$(curl -s -H "Origin: http://localhost:3000" \
+cors_response=$(curl -s -H "Origin: http://192.168.1.7:3000" \
                      -H "Access-Control-Request-Method: GET" \
                      -H "Access-Control-Request-Headers: X-Requested-With" \
                      -X OPTIONS \
-                     http://localhost:8080/api/auth/health \
+                     http://192.168.1.7:8080/api/auth/health \
                      -w "%{http_code}" \
                      -o /dev/null)
 
@@ -84,10 +84,10 @@ else
 fi
 
 echo -e "\n${YELLOW}Gateway Configuration Summary:${NC}"
-echo "• Gateway URL: http://localhost:8080"
-echo "• Auth Service: http://localhost:8080/api/auth/**"
-echo "• Student Service: http://localhost:8080/api/students/**"
-echo "• Teacher Service: http://localhost:8080/api/teachers/**"
-echo "• Health Check: http://localhost:8080/actuator/health"
+echo "• Gateway URL: http://192.168.1.7:8080"
+echo "• Auth Service: http://192.168.1.7:8080/api/auth/**"
+echo "• Student Service: http://192.168.1.7:8080/api/students/**"
+echo "• Teacher Service: http://192.168.1.7:8080/api/teachers/**"
+echo "• Health Check: http://192.168.1.7:8080/actuator/health"
 
 echo -e "\n${GREEN}🎉 API Gateway test completed!${NC}"
