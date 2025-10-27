@@ -20,25 +20,47 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load user on mount
-  useEffect(() => {
-    loadUser();
-  }, []);
-
-  const loadUser = async () => {
+  // Load user on mount - always fresh from API
+  const loadUser = useCallback(async () => {
     try {
       if (authService.isAuthenticated()) {
         const currentUser = await authService.getCurrentUser();
         setUser(currentUser);
+      } else {
+        // Not authenticated, clear any cached user
+        setUser(null);
       }
     } catch (error) {
       console.error('Failed to load user:', error);
-      // Clear invalid token
-      authService.logout();
+      // Don't automatically logout on error - might be network issue
+      // Keep the user logged in if the token is still valid
+      if (!authService.isAuthenticated()) {
+        // Token is expired or invalid
+        authService.logout();
+        setUser(null);
+      } else {
+        // Token is still valid, try to use cached user
+        if (typeof window !== 'undefined') {
+          const cachedUser = localStorage.getItem('currentUser');
+          if (cachedUser) {
+            try {
+              const user = JSON.parse(cachedUser);
+              setUser(user);
+              console.log('Using cached user data due to API error');
+            } catch (e) {
+              console.error('Failed to parse cached user:', e);
+            }
+          }
+        }
+      }
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadUser();
+  }, [loadUser]);
 
   const login = useCallback(async (credentials: LoginRequest) => {
     setIsLoading(true);
@@ -110,6 +132,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout();
     }
   }, [logout]);
+
+  // Refresh user data when page becomes visible (user switches back to tab)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && user && authService.isAuthenticated()) {
+        console.log('🔄 Page visible - refreshing user data');
+        refreshUser();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user, refreshUser]);
 
   const value: AuthContextType = {
     user,

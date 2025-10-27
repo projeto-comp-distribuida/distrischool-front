@@ -42,23 +42,11 @@ export interface CreateStudentRequest {
   email: string;
   phone: string;
   birthDate: string;
+  registrationNumber?: string;
   course: string;
   semester: number;
   enrollmentDate: string;
   status: StudentStatus;
-  
-  addressStreet: string;
-  addressNumber: string;
-  addressComplement?: string;
-  addressNeighborhood: string;
-  addressCity: string;
-  addressState: string;
-  addressZipcode: string;
-  
-  emergencyContactName: string;
-  emergencyContactPhone: string;
-  emergencyContactRelationship: string;
-  
   notes?: string;
 }
 

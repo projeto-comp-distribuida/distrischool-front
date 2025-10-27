@@ -56,49 +56,27 @@ export class AuthService {
 
   /**
    * Get current user information
+   * Uses cached user data from localStorage
    */
   async getCurrentUser(): Promise<User> {
-    // First check localStorage for cached user
-    if (typeof window !== 'undefined') {
-      const cachedUser = localStorage.getItem('currentUser');
-      if (cachedUser) {
-        console.log('🔍 [AuthService] Returning cached user:', JSON.parse(cachedUser));
-        return JSON.parse(cachedUser);
-      }
-    }
-
-    // If no cached user, fetch from API
     const token = apiClient.getToken();
     if (!token) {
       throw new Error('No authentication token found');
     }
 
-    // Decode JWT to get user ID (simple implementation)
-    const payload = this.decodeToken(token);
-    const userId = payload.sub || payload.userId;
-
-    if (!userId) {
-      throw new Error('Invalid token format');
-    }
-
-    console.log('🔍 [AuthService] Fetching user from API for userId:', userId);
-    const response = await apiClient.get<ApiResponse<User>>(
-      `/api/v1/users/${userId}`
-    );
-
-    console.log('🔍 [AuthService] API response:', response);
-
-    if (response.data) {
-      console.log('🔍 [AuthService] User emailVerified status:', response.data.emailVerified || 'not returned by API');
-      console.log('🔍 [AuthService] User active status:', response.data.active);
-      // Cache user in localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('currentUser', JSON.stringify(response.data));
+    // Just use cached user from localStorage
+    if (typeof window !== 'undefined') {
+      const cachedUser = localStorage.getItem('currentUser');
+      if (cachedUser) {
+        try {
+          return JSON.parse(cachedUser);
+        } catch (error) {
+          throw new Error('Failed to parse cached user data');
+        }
       }
-      return response.data;
     }
 
-    throw new Error('Failed to fetch user data');
+    throw new Error('No cached user data found');
   }
 
   /**
@@ -143,38 +121,9 @@ export class AuthService {
    */
   isAuthenticated(): boolean {
     const token = apiClient.getToken();
-    if (!token) return false;
-
-    try {
-      const payload = this.decodeToken(token);
-      const exp = payload.exp;
-      
-      if (!exp) return true; // If no expiration, assume valid
-      
-      // Check if token is expired
-      return Date.now() < exp * 1000;
-    } catch {
-      return false;
-    }
+    return !!token;
   }
 
-  /**
-   * Simple JWT decoder (decode payload only)
-   */
-  private decodeToken(token: string): any {
-    try {
-      const parts = token.split('.');
-      if (parts.length !== 3) {
-        throw new Error('Invalid token format');
-      }
-
-      const payload = parts[1];
-      const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
-      return JSON.parse(decoded);
-    } catch (error) {
-      throw new Error('Failed to decode token');
-    }
-  }
 }
 
 // Export singleton instance

@@ -195,7 +195,13 @@ class ApiClient {
     }
 
     if (isJson) {
-      return response.json();
+      const data = await response.json();
+      // Handle ApiResponse wrapper from backend
+      // Backend returns: {success: true, message: "...", data: [...], timestamp: "..."}
+      if (data && typeof data === 'object' && 'data' in data) {
+        return data.data;
+      }
+      return data;
     }
 
     return response.text() as any;

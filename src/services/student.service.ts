@@ -13,7 +13,7 @@ import type {
 import type { ApiResponse } from '@/types/auth.types';
 
 export class StudentService {
-  private basePath = '/api/students';
+  private basePath = '/api/v1/students';
 
   /**
    * Get all students with pagination
@@ -58,7 +58,34 @@ export class StudentService {
    */
   async create(data: CreateStudentRequest, userId?: string): Promise<Student> {
     const headers = userId ? { 'X-User-Id': userId } : undefined;
-    return apiClient.post<Student>(this.basePath, data, { headers });
+    
+    // Filter out fields that backend doesn't support yet
+    const backendData = {
+      fullName: data.fullName,
+      cpf: data.cpf,
+      email: data.email,
+      phone: data.phone,
+      birthDate: data.birthDate,
+      registrationNumber: data.registrationNumber || this.generateTempRegistrationNumber(),
+      course: data.course,
+      semester: data.semester,
+      enrollmentDate: data.enrollmentDate,
+      status: data.status,
+      notes: data.notes,
+    };
+    
+    return apiClient.post<Student>(this.basePath, backendData, { headers });
+  }
+
+  /**
+   * Generate a temporary registration number (format: YYYYMM + 6 digits)
+   */
+  private generateTempRegistrationNumber(): string {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const random = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
+    return `${year}${month}${random}`;
   }
 
   /**
@@ -70,7 +97,23 @@ export class StudentService {
     userId?: string
   ): Promise<Student> {
     const headers = userId ? { 'X-User-Id': userId } : undefined;
-    return apiClient.put<Student>(`${this.basePath}/${id}`, data, { headers });
+    
+    // Filter out fields that backend doesn't support yet
+    const backendData = {
+      fullName: data.fullName,
+      cpf: data.cpf,
+      email: data.email,
+      phone: data.phone,
+      birthDate: data.birthDate,
+      registrationNumber: data.registrationNumber,
+      course: data.course,
+      semester: data.semester,
+      enrollmentDate: data.enrollmentDate,
+      status: data.status,
+      notes: data.notes,
+    };
+    
+    return apiClient.put<Student>(`${this.basePath}/${id}`, backendData, { headers });
   }
 
   /**

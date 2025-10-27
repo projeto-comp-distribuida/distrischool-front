@@ -16,16 +16,21 @@ import type {
 import type { ApiResponse } from '@/types/auth.types';
 
 export class TeacherService {
-  private basePath = '/api/teachers';
-  private managementPath = '/api/teacher-management';
+  private basePath = '/api/v1/teachers';
+  private managementPath = '/api/v1/teacher-management';
 
   // ==================== Basic CRUD Operations ====================
 
   /**
-   * Get all teachers
+   * Get all teachers with optional pagination
    */
-  async getAll(): Promise<Teacher[]> {
-    return apiClient.get<Teacher[]>(this.basePath);
+  async getAll(params?: {
+    page?: number;
+    size?: number;
+    sortBy?: string;
+    direction?: 'ASC' | 'DESC';
+  }): Promise<Teacher[] | any> {
+    return apiClient.get<Teacher[] | any>(this.basePath, { params });
   }
 
   /**

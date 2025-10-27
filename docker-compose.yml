@@ -107,7 +107,7 @@ services:
 
   # Spring Cloud Gateway - API Gateway Service
   api-gateway-dev:
-    image: ${ACR_REGISTRY}/api-gateway:latest
+    image: distrischooldevacr.azurecr.io/api-gateway:latest
     container_name: distrischool-api-gateway-dev
     ports:
       - "8080:8080"
@@ -131,18 +131,24 @@ services:
       # Remove Origin and Referer headers to prevent CORS issues in backend
       SPRING_CLOUD_GATEWAY_ROUTES_0_FILTERS_0: RemoveRequestHeader=Origin
       SPRING_CLOUD_GATEWAY_ROUTES_0_FILTERS_1: RemoveRequestHeader=Referer
-      SPRING_CLOUD_GATEWAY_ROUTES_1_ID: student-service
-      SPRING_CLOUD_GATEWAY_ROUTES_1_URI: http://student-management-service-dev:8080
-      SPRING_CLOUD_GATEWAY_ROUTES_1_PREDICATES_0: Path=/api/students/**
-      SPRING_CLOUD_GATEWAY_ROUTES_1_FILTERS_0: StripPrefix=2
-      SPRING_CLOUD_GATEWAY_ROUTES_1_FILTERS_1: RemoveRequestHeader=Origin
-      SPRING_CLOUD_GATEWAY_ROUTES_1_FILTERS_2: RemoveRequestHeader=Referer
-      SPRING_CLOUD_GATEWAY_ROUTES_2_ID: teacher-service
-      SPRING_CLOUD_GATEWAY_ROUTES_2_URI: http://microservice-teacher-dev:8080
-      SPRING_CLOUD_GATEWAY_ROUTES_2_PREDICATES_0: Path=/api/teachers/**
-      SPRING_CLOUD_GATEWAY_ROUTES_2_FILTERS_0: StripPrefix=2
-      SPRING_CLOUD_GATEWAY_ROUTES_2_FILTERS_1: RemoveRequestHeader=Origin
-      SPRING_CLOUD_GATEWAY_ROUTES_2_FILTERS_2: RemoveRequestHeader=Referer
+      # Users Service Route - Handle user lookup endpoints
+      SPRING_CLOUD_GATEWAY_ROUTES_1_ID: users-service
+      SPRING_CLOUD_GATEWAY_ROUTES_1_URI: http://microservice-auth-dev:8080
+      SPRING_CLOUD_GATEWAY_ROUTES_1_PREDICATES_0: Path=/api/v1/users/**
+      SPRING_CLOUD_GATEWAY_ROUTES_1_FILTERS_0: RemoveRequestHeader=Origin
+      SPRING_CLOUD_GATEWAY_ROUTES_1_FILTERS_1: RemoveRequestHeader=Referer
+      # Student Service Route
+      SPRING_CLOUD_GATEWAY_ROUTES_2_ID: student-service
+      SPRING_CLOUD_GATEWAY_ROUTES_2_URI: http://student-management-service-dev:8080
+      SPRING_CLOUD_GATEWAY_ROUTES_2_PREDICATES_0: Path=/api/v1/students/**
+      SPRING_CLOUD_GATEWAY_ROUTES_2_FILTERS_0: RemoveRequestHeader=Origin
+      SPRING_CLOUD_GATEWAY_ROUTES_2_FILTERS_1: RemoveRequestHeader=Referer
+      # Teacher Service Route
+      SPRING_CLOUD_GATEWAY_ROUTES_3_ID: teacher-service
+      SPRING_CLOUD_GATEWAY_ROUTES_3_URI: http://microservice-teacher-dev:8080
+      SPRING_CLOUD_GATEWAY_ROUTES_3_PREDICATES_0: Path=/api/v1/teachers/**
+      SPRING_CLOUD_GATEWAY_ROUTES_3_FILTERS_0: RemoveRequestHeader=Origin
+      SPRING_CLOUD_GATEWAY_ROUTES_3_FILTERS_1: RemoveRequestHeader=Referer
     networks:
       - distrischool-network
     depends_on:

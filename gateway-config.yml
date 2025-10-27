@@ -54,9 +54,9 @@ spring:
         - id: student-service
           uri: http://student-management-service-dev:8080
           predicates:
-            - Path=/api/students/**
+            - Path=/api/v1/students/**
           filters:
-            - StripPrefix=2
+            - StripPrefix=3
             - name: RequestRateLimiter
               args:
                 redis-rate-limiter.replenishRate: 10
