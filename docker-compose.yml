@@ -85,10 +85,11 @@ services:
     networks:
       - distrischool-network
     healthcheck:
-      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "192.168.1.7:9092"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:29092"]
+      interval: 15s
+      timeout: 30s
+      retries: 3
+      start_period: 60s
 
   # Kafka UI (Opcional - Para visualizar tópicos e mensagens)
   kafka-ui:

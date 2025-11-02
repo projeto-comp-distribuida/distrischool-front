@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { BookOpen, Users, GraduationCap, LogOut, RefreshCw } from "lucide-react"
+import { NotificationCenter } from "@/components/notification-center"
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -75,6 +76,7 @@ export default function DashboardPage() {
               <p className="font-medium">{user.firstName} {user.lastName}</p>
               <p className="text-sm text-muted-foreground">{userRole}</p>
             </div>
+            <NotificationCenter isAdmin={userRole === 'ADMIN'} />
             <Button variant="outline" size="icon" onClick={handleLogout}>
               <LogOut className="h-4 w-4" />
             </Button>
