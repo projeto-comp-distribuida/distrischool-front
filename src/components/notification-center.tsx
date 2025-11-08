@@ -1,8 +1,10 @@
 "use client"
 
-import { useEffect, useState } from 'react';
-import { Bell, X, UserPlus, UserX, GraduationCap } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { Bell, X, UserPlus, UserX, GraduationCap, Wifi, WifiOff } from 'lucide-react';
 import { notificationService } from '@/services/notification.service';
+import { apiClient } from '@/lib/api-client';
+import { logger } from '@/lib/logger';
 import type { Notification } from '@/types/notification.types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,32 +17,85 @@ export function NotificationCenter({ isAdmin }: NotificationCenterProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [wsStatus, setWsStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
 
-  // Load notifications
-  const loadNotifications = async () => {
+  // Load notifications from REST API
+  const loadNotifications = useCallback(async () => {
+    if (!isAdmin) return;
+
     setIsLoading(true);
+    logger.info('NotificationCenter', 'Carregando notificações...');
+    
     try {
       const data = await notificationService.getNotifications();
       setNotifications(data);
+      logger.success('NotificationCenter', `✅ ${data.length} notificações carregadas`);
     } catch (error) {
-      console.error('Error loading notifications:', error);
+      logger.error('NotificationCenter', 'Erro ao carregar notificações', error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isAdmin]);
 
-  // Poll for notifications every 30 seconds
+  // Handle new notification from WebSocket
+  const handleNewNotification = useCallback((notification: Notification) => {
+    logger.info('NotificationCenter', 'Nova notificação recebida via WebSocket', {
+      id: notification.id,
+      type: notification.type
+    });
+
+    setNotifications(prev => {
+      // Evitar duplicatas
+      const exists = prev.find(n => n.id === notification.id);
+      if (exists) {
+        logger.debug('NotificationCenter', 'Notificação já existe, ignorando', { id: notification.id });
+        return prev;
+      }
+
+      // Adicionar no início da lista
+      const updated = [notification, ...prev];
+      logger.success('NotificationCenter', `Notificação adicionada. Total: ${updated.length}`);
+      return updated;
+    });
+  }, []);
+
+  // Connect WebSocket when component mounts and user is admin
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isAdmin) {
+      logger.debug('NotificationCenter', 'Usuário não é admin, WebSocket não será conectado');
+      return;
+    }
 
-    // Load immediately
+    logger.info('NotificationCenter', 'Inicializando sistema de notificações...');
+
+    // Load initial notifications
     loadNotifications();
 
-    // Then poll every 30 seconds
-    const interval = setInterval(loadNotifications, 30000);
+    // Get token and connect WebSocket
+    const token = apiClient.getToken();
+    if (token) {
+      logger.info('NotificationCenter', 'Token encontrado, conectando WebSocket...');
+      
+      // Connect WebSocket
+      notificationService.connectWebSocket(token, handleNewNotification);
 
-    return () => clearInterval(interval);
-  }, [isAdmin]);
+      // Monitor WebSocket status
+      const checkStatus = setInterval(() => {
+        const status = notificationService.getWebSocketStatus();
+        setWsStatus(status);
+        logger.debug('NotificationCenter', `Status WebSocket: ${status}`);
+      }, 1000);
+
+      // Cleanup on unmount
+      return () => {
+        logger.info('NotificationCenter', 'Desmontando componente, desconectando WebSocket...');
+        clearInterval(checkStatus);
+        notificationService.disconnectWebSocket();
+      };
+    } else {
+      logger.warn('NotificationCenter', 'Token não encontrado, WebSocket não será conectado');
+    }
+  }, [isAdmin, loadNotifications, handleNewNotification]);
 
   // Get notification icon
   const getIcon = (type: string) => {
@@ -56,9 +111,22 @@ export function NotificationCenter({ isAdmin }: NotificationCenterProps) {
   };
 
   // Dismiss notification
-  const dismissNotification = (notificationId: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== notificationId));
-    notificationService.markAsRead(notificationId);
+  const dismissNotification = async (notificationId: string) => {
+    logger.info('NotificationCenter', `Dispensando notificação: ${notificationId}`);
+    
+    setNotifications(prev => {
+      const updated = prev.filter(n => n.id !== notificationId);
+      logger.debug('NotificationCenter', `Notificação removida. Total: ${updated.length}`);
+      return updated;
+    });
+
+    try {
+      await notificationService.markAsRead(notificationId);
+    } catch (error) {
+      logger.error('NotificationCenter', `Erro ao marcar notificação como lida: ${notificationId}`, error);
+      // Reverter remoção em caso de erro
+      loadNotifications();
+    }
   };
 
   // Format timestamp
@@ -78,6 +146,20 @@ export function NotificationCenter({ isAdmin }: NotificationCenterProps) {
     return `${days}d atrás`;
   };
 
+  // Get WebSocket status icon
+  const getWsStatusIcon = () => {
+    switch (wsStatus) {
+      case 'connected':
+        return <Wifi className="h-4 w-4 text-green-500" />;
+      case 'connecting':
+        return <Wifi className="h-4 w-4 text-yellow-500 animate-pulse" />;
+      case 'error':
+        return <WifiOff className="h-4 w-4 text-red-500" />;
+      default:
+        return <WifiOff className="h-4 w-4 text-gray-400" />;
+    }
+  };
+
   if (!isAdmin) return null;
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -87,7 +169,14 @@ export function NotificationCenter({ isAdmin }: NotificationCenterProps) {
       <Button
         variant="outline"
         size="icon"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          logger.info('NotificationCenter', `Abrindo/fechando centro de notificações. Aberto: ${!isOpen}`);
+          setIsOpen(!isOpen);
+          if (!isOpen) {
+            // Recarregar notificações quando abrir
+            loadNotifications();
+          }
+        }}
         className="relative"
       >
         <Bell className="h-5 w-5" />
@@ -103,7 +192,10 @@ export function NotificationCenter({ isAdmin }: NotificationCenterProps) {
           {/* Backdrop */}
           <div
             className="fixed inset-0 z-40 bg-black/20"
-            onClick={() => setIsOpen(false)}
+            onClick={() => {
+              logger.debug('NotificationCenter', 'Fechando via backdrop');
+              setIsOpen(false);
+            }}
           />
           
           {/* Dropdown */}
@@ -111,17 +203,24 @@ export function NotificationCenter({ isAdmin }: NotificationCenterProps) {
             <Card className="shadow-lg">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">Notificações</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-lg">Notificações</CardTitle>
+                    {getWsStatusIcon()}
+                  </div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setIsOpen(false)}
+                    onClick={() => {
+                      logger.debug('NotificationCenter', 'Fechando via botão X');
+                      setIsOpen(false);
+                    }}
                   >
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
                 <CardDescription>
                   {unreadCount > 0 ? `${unreadCount} não lidas` : 'Todas lidas'}
+                  {wsStatus === 'connected' && ' • Tempo real ativo'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-0">
@@ -184,4 +283,3 @@ export function NotificationCenter({ isAdmin }: NotificationCenterProps) {
     </div>
   );
 }
-

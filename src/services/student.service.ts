@@ -1,6 +1,7 @@
 // Student Management Service
 
 import { apiClient } from '@/lib/api-client';
+import { logger } from '@/lib/logger';
 import type {
   Student,
   CreateStudentRequest,
@@ -57,6 +58,11 @@ export class StudentService {
    * Create a new student
    */
   async create(data: CreateStudentRequest, userId?: string): Promise<Student> {
+    logger.info('Student Service', `Tentando criar novo estudante: ${data.fullName}`, {
+      email: data.email,
+      registrationNumber: data.registrationNumber
+    });
+    
     const headers = userId ? { 'X-User-Id': userId } : undefined;
     
     // Filter out fields that backend doesn't support yet
@@ -74,7 +80,17 @@ export class StudentService {
       notes: data.notes,
     };
     
-    return apiClient.post<Student>(this.basePath, backendData, { headers });
+    try {
+      const student = await apiClient.post<Student>(this.basePath, backendData, { headers });
+      logger.success('Student Service', `✅ Estudante criado com sucesso: ${student.fullName}`, {
+        id: student.id,
+        registrationNumber: student.registrationNumber
+      });
+      return student;
+    } catch (error) {
+      logger.error('Student Service', `❌ Falha ao criar estudante: ${data.fullName}`, error);
+      throw error;
+    }
   }
 
   /**
@@ -96,6 +112,11 @@ export class StudentService {
     data: UpdateStudentRequest,
     userId?: string
   ): Promise<Student> {
+    logger.info('Student Service', `Tentando atualizar estudante ID: ${id}`, {
+      fullName: data.fullName,
+      email: data.email
+    });
+    
     const headers = userId ? { 'X-User-Id': userId } : undefined;
     
     // Filter out fields that backend doesn't support yet
@@ -113,15 +134,34 @@ export class StudentService {
       notes: data.notes,
     };
     
-    return apiClient.put<Student>(`${this.basePath}/${id}`, backendData, { headers });
+    try {
+      const student = await apiClient.put<Student>(`${this.basePath}/${id}`, backendData, { headers });
+      logger.success('Student Service', `✅ Estudante atualizado com sucesso: ${student.fullName}`, {
+        id: student.id
+      });
+      return student;
+    } catch (error) {
+      logger.error('Student Service', `❌ Falha ao atualizar estudante ID: ${id}`, error);
+      throw error;
+    }
   }
 
   /**
    * Delete (soft delete) a student
    */
   async delete(id: number, userId?: string): Promise<ApiResponse> {
+    logger.info('Student Service', `Tentando deletar estudante ID: ${id}`);
+    
     const headers = userId ? { 'X-User-Id': userId } : undefined;
-    return apiClient.delete<ApiResponse>(`${this.basePath}/${id}`, { headers });
+    
+    try {
+      const response = await apiClient.delete<ApiResponse>(`${this.basePath}/${id}`, { headers });
+      logger.success('Student Service', `✅ Estudante deletado com sucesso ID: ${id}`);
+      return response;
+    } catch (error) {
+      logger.error('Student Service', `❌ Falha ao deletar estudante ID: ${id}`, error);
+      throw error;
+    }
   }
 
   /**

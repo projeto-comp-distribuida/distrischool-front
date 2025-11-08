@@ -1,6 +1,7 @@
 // Teacher Management Service
 
 import { apiClient } from '@/lib/api-client';
+import { logger } from '@/lib/logger';
 import type {
   Teacher,
   CreateTeacherRequest,
@@ -51,21 +52,59 @@ export class TeacherService {
    * Create a new teacher
    */
   async create(data: CreateTeacherRequest): Promise<Teacher> {
-    return apiClient.post<Teacher>(this.basePath, data);
+    logger.info('Teacher Service', `Tentando criar novo professor: ${data.fullName}`, {
+      email: data.email,
+      employeeId: data.employeeId
+    });
+    
+    try {
+      const teacher = await apiClient.post<Teacher>(this.basePath, data);
+      logger.success('Teacher Service', `✅ Professor criado com sucesso: ${teacher.fullName}`, {
+        id: teacher.id,
+        employeeId: teacher.employeeId
+      });
+      return teacher;
+    } catch (error) {
+      logger.error('Teacher Service', `❌ Falha ao criar professor: ${data.fullName}`, error);
+      throw error;
+    }
   }
 
   /**
    * Update an existing teacher
    */
   async update(id: number, data: UpdateTeacherRequest): Promise<Teacher> {
-    return apiClient.put<Teacher>(`${this.basePath}/${id}`, data);
+    logger.info('Teacher Service', `Tentando atualizar professor ID: ${id}`, {
+      fullName: data.fullName,
+      email: data.email
+    });
+    
+    try {
+      const teacher = await apiClient.put<Teacher>(`${this.basePath}/${id}`, data);
+      logger.success('Teacher Service', `✅ Professor atualizado com sucesso: ${teacher.fullName}`, {
+        id: teacher.id
+      });
+      return teacher;
+    } catch (error) {
+      logger.error('Teacher Service', `❌ Falha ao atualizar professor ID: ${id}`, error);
+      throw error;
+    }
   }
 
   /**
    * Delete a teacher
    */
   async delete(id: number): Promise<ApiResponse> {
-    return apiClient.delete<ApiResponse>(`${this.basePath}/${id}`);
+    logger.info('Teacher Service', `Tentando deletar professor ID: ${id}`);
+    
+    try {
+      const response = await apiClient.delete<ApiResponse>(`${this.basePath}/${id}`);
+      logger.success('Teacher Service', `✅ Professor deletado com sucesso ID: ${id}`);
+      return response;
+    } catch (error) {
+      logger.error('Teacher Service', `❌ Falha ao deletar professor ID: ${id}`, error);
+      throw error;
+    }
   }
 
   /**

@@ -1,6 +1,7 @@
 // Authentication Service
 
 import { apiClient } from '@/lib/api-client';
+import { logger } from '@/lib/logger';
 import type {
   LoginRequest,
   LoginResponse,
@@ -20,6 +21,8 @@ export class AuthService {
    * Login with email and password
    */
   async login(credentials: LoginRequest): Promise<LoginResponse> {
+    logger.info('Auth Service', `Tentando fazer login para: ${credentials.email}`);
+    
     const response = await apiClient.post<LoginResponse>(
       `${this.basePath}/login`,
       credentials
@@ -28,6 +31,11 @@ export class AuthService {
     // Store the token
     if (response.success && response.data.token) {
       apiClient.setToken(response.data.token);
+      logger.success('Auth Service', `✅ Login bem-sucedido para: ${credentials.email}`);
+    } else {
+      logger.error('Auth Service', `❌ Login falhou para: ${credentials.email}`, {
+        message: response.message
+      });
     }
 
     return response;
@@ -37,21 +45,35 @@ export class AuthService {
    * Register a new user
    */
   async register(data: RegisterRequest): Promise<RegisterResponse> {
-    return apiClient.post<RegisterResponse>(
+    logger.info('Auth Service', `Tentando registrar novo usuário: ${data.email}`);
+    
+    const response = await apiClient.post<RegisterResponse>(
       `${this.basePath}/register`,
       data
     );
+    
+    if (response.success) {
+      logger.success('Auth Service', `✅ Usuário registrado com sucesso: ${data.email}`);
+    } else {
+      logger.error('Auth Service', `❌ Registro falhou para: ${data.email}`, {
+        message: response.message
+      });
+    }
+    
+    return response;
   }
 
   /**
    * Logout current user
    */
   logout(): void {
+    logger.info('Auth Service', 'Fazendo logout do usuário');
     apiClient.setToken(null);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('authToken');
       localStorage.removeItem('currentUser');
     }
+    logger.success('Auth Service', '✅ Logout realizado com sucesso');
   }
 
   /**
@@ -59,8 +81,11 @@ export class AuthService {
    * Uses cached user data from localStorage
    */
   async getCurrentUser(): Promise<User> {
+    logger.debug('Auth Service', 'Buscando dados do usuário atual');
+    
     const token = apiClient.getToken();
     if (!token) {
+      logger.error('Auth Service', '❌ Token de autenticação não encontrado');
       throw new Error('No authentication token found');
     }
 
@@ -69,13 +94,20 @@ export class AuthService {
       const cachedUser = localStorage.getItem('currentUser');
       if (cachedUser) {
         try {
-          return JSON.parse(cachedUser);
+          const user = JSON.parse(cachedUser);
+          logger.debug('Auth Service', '✅ Usuário encontrado no cache', {
+            userId: user.id,
+            email: user.email
+          });
+          return user;
         } catch (error) {
+          logger.error('Auth Service', '❌ Erro ao fazer parse do usuário em cache', error);
           throw new Error('Failed to parse cached user data');
         }
       }
     }
 
+    logger.error('Auth Service', '❌ Dados do usuário não encontrados no cache');
     throw new Error('No cached user data found');
   }
 

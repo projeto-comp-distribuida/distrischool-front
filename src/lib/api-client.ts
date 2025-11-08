@@ -1,7 +1,9 @@
 // Base API Client for DistriSchool
 
-// Using API Gateway on port 8080
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.7:8080';
+import { logger } from './logger';
+
+// Using API Gateway
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://distrischool.ddns.net';
 
 export interface ApiConfig {
   headers?: Record<string, string>;
@@ -25,8 +27,13 @@ class ApiClient {
     if (typeof window !== 'undefined') {
       if (token) {
         localStorage.setItem('authToken', token);
+        logger.success('API Client', 'Token de autenticação definido', { 
+          hasToken: !!token,
+          tokenLength: token?.length 
+        });
       } else {
         localStorage.removeItem('authToken');
+        logger.info('API Client', 'Token de autenticação removido');
       }
     }
   }
@@ -64,6 +71,13 @@ class ApiClient {
 
   async get<T>(path: string, config?: ApiConfig): Promise<T> {
     const url = this.buildURL(path, config?.params);
+    const startTime = Date.now();
+    
+    logger.info('API Client', `GET ${path}`, { 
+      url: url.replace(this.token || '', '***'),
+      hasToken: !!this.token,
+      params: config?.params 
+    });
     
     try {
       const response = await fetch(url, {
@@ -71,10 +85,22 @@ class ApiClient {
         headers: this.getHeaders(config?.headers),
       });
 
+      const duration = Date.now() - startTime;
+      logger.success('API Client', `GET ${path} - ${response.status}`, { 
+        duration: `${duration}ms`,
+        status: response.status,
+        statusText: response.statusText
+      });
+
       return this.handleResponse<T>(response);
     } catch (error) {
+      const duration = Date.now() - startTime;
+      logger.error('API Client', `GET ${path} falhou`, error);
+      
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('Não foi possível conectar ao servidor. Verifique se o API Gateway está rodando em http://192.168.1.7:8080');
+        const errorMsg = 'Não foi possível conectar ao servidor. Verifique se o API Gateway está acessível';
+        logger.error('API Client', errorMsg, { url, duration: `${duration}ms` });
+        throw new Error(errorMsg);
       }
       throw error;
     }
@@ -82,6 +108,15 @@ class ApiClient {
 
   async post<T>(path: string, data?: any, config?: ApiConfig): Promise<T> {
     const url = this.buildURL(path, config?.params);
+    const startTime = Date.now();
+    
+    logger.info('API Client', `POST ${path}`, { 
+      url: url.replace(this.token || '', '***'),
+      hasToken: !!this.token,
+      hasData: !!data,
+      dataKeys: data ? Object.keys(data) : [],
+      params: config?.params 
+    });
     
     try {
       const response = await fetch(url, {
@@ -90,10 +125,22 @@ class ApiClient {
         body: data ? JSON.stringify(data) : undefined,
       });
 
+      const duration = Date.now() - startTime;
+      logger.success('API Client', `POST ${path} - ${response.status}`, { 
+        duration: `${duration}ms`,
+        status: response.status,
+        statusText: response.statusText
+      });
+
       return this.handleResponse<T>(response);
     } catch (error) {
+      const duration = Date.now() - startTime;
+      logger.error('API Client', `POST ${path} falhou`, error);
+      
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('Não foi possível conectar ao servidor. Verifique se o API Gateway está rodando em http://192.168.1.7:8080');
+        const errorMsg = 'Não foi possível conectar ao servidor. Verifique se o API Gateway está acessível';
+        logger.error('API Client', errorMsg, { url, duration: `${duration}ms` });
+        throw new Error(errorMsg);
       }
       throw error;
     }
@@ -101,6 +148,14 @@ class ApiClient {
 
   async put<T>(path: string, data?: any, config?: ApiConfig): Promise<T> {
     const url = this.buildURL(path, config?.params);
+    const startTime = Date.now();
+    
+    logger.info('API Client', `PUT ${path}`, { 
+      url: url.replace(this.token || '', '***'),
+      hasToken: !!this.token,
+      hasData: !!data,
+      params: config?.params 
+    });
     
     try {
       const response = await fetch(url, {
@@ -109,10 +164,21 @@ class ApiClient {
         body: data ? JSON.stringify(data) : undefined,
       });
 
+      const duration = Date.now() - startTime;
+      logger.success('API Client', `PUT ${path} - ${response.status}`, { 
+        duration: `${duration}ms`,
+        status: response.status
+      });
+
       return this.handleResponse<T>(response);
     } catch (error) {
+      const duration = Date.now() - startTime;
+      logger.error('API Client', `PUT ${path} falhou`, error);
+      
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('Não foi possível conectar ao servidor. Verifique se o API Gateway está rodando em http://192.168.1.7:8080');
+        const errorMsg = 'Não foi possível conectar ao servidor. Verifique se o API Gateway está acessível';
+        logger.error('API Client', errorMsg, { url, duration: `${duration}ms` });
+        throw new Error(errorMsg);
       }
       throw error;
     }
@@ -120,6 +186,14 @@ class ApiClient {
 
   async patch<T>(path: string, data?: any, config?: ApiConfig): Promise<T> {
     const url = this.buildURL(path, config?.params);
+    const startTime = Date.now();
+    
+    logger.info('API Client', `PATCH ${path}`, { 
+      url: url.replace(this.token || '', '***'),
+      hasToken: !!this.token,
+      hasData: !!data,
+      params: config?.params 
+    });
     
     try {
       const response = await fetch(url, {
@@ -128,10 +202,21 @@ class ApiClient {
         body: data ? JSON.stringify(data) : undefined,
       });
 
+      const duration = Date.now() - startTime;
+      logger.success('API Client', `PATCH ${path} - ${response.status}`, { 
+        duration: `${duration}ms`,
+        status: response.status
+      });
+
       return this.handleResponse<T>(response);
     } catch (error) {
+      const duration = Date.now() - startTime;
+      logger.error('API Client', `PATCH ${path} falhou`, error);
+      
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('Não foi possível conectar ao servidor. Verifique se o API Gateway está rodando em http://192.168.1.7:8080');
+        const errorMsg = 'Não foi possível conectar ao servidor. Verifique se o API Gateway está acessível';
+        logger.error('API Client', errorMsg, { url, duration: `${duration}ms` });
+        throw new Error(errorMsg);
       }
       throw error;
     }
@@ -139,6 +224,13 @@ class ApiClient {
 
   async delete<T>(path: string, config?: ApiConfig): Promise<T> {
     const url = this.buildURL(path, config?.params);
+    const startTime = Date.now();
+    
+    logger.info('API Client', `DELETE ${path}`, { 
+      url: url.replace(this.token || '', '***'),
+      hasToken: !!this.token,
+      params: config?.params 
+    });
     
     try {
       const response = await fetch(url, {
@@ -146,10 +238,21 @@ class ApiClient {
         headers: this.getHeaders(config?.headers),
       });
 
+      const duration = Date.now() - startTime;
+      logger.success('API Client', `DELETE ${path} - ${response.status}`, { 
+        duration: `${duration}ms`,
+        status: response.status
+      });
+
       return this.handleResponse<T>(response);
     } catch (error) {
+      const duration = Date.now() - startTime;
+      logger.error('API Client', `DELETE ${path} falhou`, error);
+      
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('Não foi possível conectar ao servidor. Verifique se o API Gateway está rodando em http://192.168.1.7:8080');
+        const errorMsg = 'Não foi possível conectar ao servidor. Verifique se o API Gateway está acessível';
+        logger.error('API Client', errorMsg, { url, duration: `${duration}ms` });
+        throw new Error(errorMsg);
       }
       throw error;
     }
@@ -162,9 +265,17 @@ class ApiClient {
     if (!response.ok) {
       let errorMessage = `HTTP Error: ${response.status}`;
       
+      logger.warn('API Client', `Resposta com erro: ${response.status} ${response.statusText}`, {
+        status: response.status,
+        statusText: response.statusText,
+        contentType
+      });
+      
       if (isJson) {
         try {
           const errorData = await response.json();
+          logger.debug('API Client', 'Dados do erro recebidos', errorData);
+          
           // Tratar diferentes formatos de erro do backend
           if (errorData.message) {
             errorMessage = errorData.message;
@@ -178,15 +289,16 @@ class ApiClient {
             errorMessage = errorData;
           }
         } catch (e) {
-          console.error('Erro ao processar resposta de erro:', e);
+          logger.error('API Client', 'Erro ao processar resposta de erro JSON', e);
           errorMessage = `Erro HTTP ${response.status}: ${response.statusText}`;
         }
       } else {
         try {
           const textError = await response.text();
           errorMessage = textError || `Erro HTTP ${response.status}: ${response.statusText}`;
+          logger.debug('API Client', 'Erro em texto recebido', { errorMessage });
         } catch (e) {
-          console.error('Erro ao ler texto da resposta:', e);
+          logger.error('API Client', 'Erro ao ler texto da resposta', e);
           errorMessage = `Erro HTTP ${response.status}: ${response.statusText}`;
         }
       }
@@ -196,6 +308,12 @@ class ApiClient {
 
     if (isJson) {
       const data = await response.json();
+      logger.debug('API Client', 'Resposta JSON recebida', { 
+        hasData: !!data,
+        keys: data ? Object.keys(data) : [],
+        isWrapped: data && typeof data === 'object' && 'data' in data
+      });
+      
       // Handle ApiResponse wrapper from backend
       // Backend returns: {success: true, message: "...", data: [...], timestamp: "..."}
       if (data && typeof data === 'object' && 'data' in data) {
@@ -204,7 +322,9 @@ class ApiClient {
       return data;
     }
 
-    return response.text() as any;
+    const textData = await response.text();
+    logger.debug('API Client', 'Resposta em texto recebida', { length: textData.length });
+    return textData as any;
   }
 }
 
