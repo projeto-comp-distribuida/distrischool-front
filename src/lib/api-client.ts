@@ -72,9 +72,10 @@ class ApiClient {
   async get<T>(path: string, config?: ApiConfig): Promise<T> {
     const url = this.buildURL(path, config?.params);
     const startTime = Date.now();
+    const maskedUrl = this.token ? url.replace(this.token, '***') : url;
     
     logger.info('API Client', `GET ${path}`, { 
-      url: url.replace(this.token || '', '***'),
+      url: maskedUrl,
       hasToken: !!this.token,
       params: config?.params 
     });
@@ -109,9 +110,10 @@ class ApiClient {
   async post<T>(path: string, data?: any, config?: ApiConfig): Promise<T> {
     const url = this.buildURL(path, config?.params);
     const startTime = Date.now();
+    const maskedUrl = this.token ? url.replace(this.token, '***') : url;
     
     logger.info('API Client', `POST ${path}`, { 
-      url: url.replace(this.token || '', '***'),
+      url: maskedUrl,
       hasToken: !!this.token,
       hasData: !!data,
       dataKeys: data ? Object.keys(data) : [],
@@ -149,9 +151,10 @@ class ApiClient {
   async put<T>(path: string, data?: any, config?: ApiConfig): Promise<T> {
     const url = this.buildURL(path, config?.params);
     const startTime = Date.now();
+    const maskedUrl = this.token ? url.replace(this.token, '***') : url;
     
     logger.info('API Client', `PUT ${path}`, { 
-      url: url.replace(this.token || '', '***'),
+      url: maskedUrl,
       hasToken: !!this.token,
       hasData: !!data,
       params: config?.params 
@@ -187,9 +190,10 @@ class ApiClient {
   async patch<T>(path: string, data?: any, config?: ApiConfig): Promise<T> {
     const url = this.buildURL(path, config?.params);
     const startTime = Date.now();
+    const maskedUrl = this.token ? url.replace(this.token, '***') : url;
     
     logger.info('API Client', `PATCH ${path}`, { 
-      url: url.replace(this.token || '', '***'),
+      url: maskedUrl,
       hasToken: !!this.token,
       hasData: !!data,
       params: config?.params 
@@ -225,9 +229,10 @@ class ApiClient {
   async delete<T>(path: string, config?: ApiConfig): Promise<T> {
     const url = this.buildURL(path, config?.params);
     const startTime = Date.now();
+    const maskedUrl = this.token ? url.replace(this.token, '***') : url;
     
     logger.info('API Client', `DELETE ${path}`, { 
-      url: url.replace(this.token || '', '***'),
+      url: maskedUrl,
       hasToken: !!this.token,
       params: config?.params 
     });

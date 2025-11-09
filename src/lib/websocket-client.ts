@@ -20,20 +20,45 @@ class WebSocketClient {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 3000; // 3 segundos
-  private reconnectTimer: NodeJS.Timeout | null = null;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private status: WebSocketStatus = 'disconnected';
   private messageHandlers: Set<MessageHandler> = new Set();
   private statusChangeHandlers: Set<StatusChangeHandler> = new Set();
   private errorHandlers: Set<ErrorHandler> = new Set();
-  private heartbeatInterval: NodeJS.Timeout | null = null;
+  private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
   private readonly heartbeatIntervalMs = 30000; // 30 segundos
 
   constructor(baseUrl: string) {
-    // Remover protocolo http/https se presente
-    const cleanUrl = baseUrl.replace(/^https?:\/\//, '');
-    // Adicionar protocolo ws/wss
-    const protocol = baseUrl.startsWith('https') ? 'wss' : 'ws';
-    this.url = `${protocol}://${cleanUrl}/ws/notifications`;
+    // Determinar protocolo ws/wss de forma robusta
+    let protocol = 'ws';
+    
+    try {
+      // Se baseUrl é uma URL completa, usar seu protocolo
+      if (baseUrl.includes('://')) {
+        const parsedUrl = new URL(baseUrl);
+        protocol = parsedUrl.protocol === 'https:' ? 'wss' : 'ws';
+      } else if (typeof window !== 'undefined') {
+        // Se estamos no browser, usar protocolo da página atual
+        protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+      }
+    } catch (e) {
+      // Fallback: se baseUrl contém https, usar wss
+      if (baseUrl.includes('https')) {
+        protocol = 'wss';
+      }
+    }
+    
+    // Construir URL usando URL constructor para lidar com paths e ports
+    try {
+      const baseUrlNormalized = baseUrl.replace(/^(https?:\/\/)/, '');
+      const baseWithProtocol = `${protocol === 'wss' ? 'https' : 'http'}://${baseUrlNormalized}`;
+      const fullUrl = new URL('/ws/notifications', baseWithProtocol);
+      this.url = fullUrl.toString().replace(/^https?:/, protocol + ':');
+    } catch (e) {
+      // Fallback para método simples
+      const cleanUrl = baseUrl.replace(/^https?:\/\//, '');
+      this.url = `${protocol}://${cleanUrl}/ws/notifications`;
+    }
     
     logger.info('WebSocket', `Cliente WebSocket inicializado para: ${this.url}`);
   }
@@ -57,7 +82,8 @@ class WebSocketClient {
     this.setStatus('connecting');
     
     const wsUrl = `${this.url}?token=${encodeURIComponent(token)}`;
-    logger.info('WebSocket', `Tentando conectar ao WebSocket...`, { url: wsUrl.replace(token, '***') });
+    const maskedUrl = token ? wsUrl.replace(token, '***') : wsUrl;
+    logger.info('WebSocket', `Tentando conectar ao WebSocket...`, { url: maskedUrl });
 
     try {
       this.ws = new WebSocket(wsUrl);

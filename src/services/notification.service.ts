@@ -1,15 +1,14 @@
 // Notification Service - Integração com REST API e WebSocket
 import { apiClient } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
-import type { Notification, WebSocketMessage } from '@/types/notification.types';
+import type { Notification } from '@/types/notification.types';
+import { websocketClient, type WebSocketMessage } from '@/lib/websocket-client';
 
-// Importar WebSocket dinamicamente apenas no cliente
+// Obter WebSocket client apenas no cliente (browser)
 const getWebSocketClient = () => {
   if (typeof window === 'undefined') {
     return null;
   }
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { websocketClient } = require('@/lib/websocket-client');
   return websocketClient;
 };
 
@@ -62,7 +61,8 @@ class NotificationService {
       return;
     }
 
-    if (this.wsConnected) {
+    // Evitar conexões duplicadas
+    if (wsClient.isConnected()) {
       logger.warn('Notification Service', 'WebSocket já está conectado');
       return;
     }
@@ -104,7 +104,7 @@ class NotificationService {
     });
 
     // Handler para mudanças de status
-    const unsubscribeStatus = wsClient.onStatusChange((status) => {
+    const unsubscribeStatus = wsClient.onStatusChange((status: 'disconnected' | 'connecting' | 'connected' | 'error') => {
       logger.info('Notification Service', `Status WebSocket alterado: ${status}`);
       this.wsConnected = status === 'connected';
       
@@ -118,7 +118,7 @@ class NotificationService {
     });
 
     // Handler para erros
-    const unsubscribeError = wsClient.onError((error) => {
+    const unsubscribeError = wsClient.onError((error: Error) => {
       logger.error('Notification Service', 'Erro no WebSocket', error);
     });
 
@@ -155,11 +155,13 @@ class NotificationService {
 
     // Limpar handlers se existirem
     if ((this as any).unsubscribeHandlers) {
-      (this as any).unsubscribeHandlers.forEach((unsubscribe: () => void) => {
-        try {
-          unsubscribe();
-        } catch (error) {
-          logger.error('Notification Service', 'Erro ao remover handler', error);
+      (this as any).unsubscribeHandlers.forEach((unsubscribe: (() => void) | undefined) => {
+        if (unsubscribe) {
+          try {
+            unsubscribe();
+          } catch (error) {
+            logger.error('Notification Service', 'Erro ao remover handler', error);
+          }
         }
       });
       (this as any).unsubscribeHandlers = [];
