@@ -23,22 +23,53 @@ export class AuthService {
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     logger.info('Auth Service', `Tentando fazer login para: ${credentials.email}`);
     
-    const response = await apiClient.post<LoginResponse>(
+    const response = await apiClient.post<unknown>(
       `${this.basePath}/login`,
       credentials
     );
-    
-    // Store the token
-    if (response.success && response.data.token) {
-      apiClient.setToken(response.data.token);
-      logger.success('Auth Service', `✅ Login bem-sucedido para: ${credentials.email}`);
-    } else {
+
+    const isWrappedResponse =
+      typeof response === 'object' &&
+      response !== null &&
+      'success' in response &&
+      'data' in response;
+
+    const payload = isWrappedResponse
+      ? (response as LoginResponse).data
+      : response;
+
+    const hasLoginData = (
+      value: unknown
+    ): value is LoginResponse['data'] =>
+      typeof value === 'object' &&
+      value !== null &&
+      'token' in value &&
+      'user' in value;
+
+    if (!hasLoginData(payload)) {
+      const message =
+        isWrappedResponse && 'message' in (response as LoginResponse)
+          ? (response as LoginResponse).message
+          : 'Resposta de login inválida';
+
       logger.error('Auth Service', `❌ Login falhou para: ${credentials.email}`, {
-        message: response.message
+        message,
       });
+      throw new Error(message);
     }
 
-    return response;
+    apiClient.setToken(payload.token);
+    logger.success('Auth Service', `✅ Login bem-sucedido para: ${credentials.email}`);
+
+    const normalizedResponse: LoginResponse = isWrappedResponse
+      ? (response as LoginResponse)
+      : {
+          success: true,
+          message: 'Login realizado com sucesso',
+          data: payload,
+        };
+
+    return normalizedResponse;
   }
 
   /**
@@ -47,20 +78,57 @@ export class AuthService {
   async register(data: RegisterRequest): Promise<RegisterResponse> {
     logger.info('Auth Service', `Tentando registrar novo usuário: ${data.email}`);
     
-    const response = await apiClient.post<RegisterResponse>(
+    const response = await apiClient.post<unknown>(
       `${this.basePath}/register`,
       data
     );
-    
-    if (response.success) {
-      logger.success('Auth Service', `✅ Usuário registrado com sucesso: ${data.email}`);
-    } else {
-      logger.error('Auth Service', `❌ Registro falhou para: ${data.email}`, {
-        message: response.message
-      });
+
+    const isWrappedResponse =
+      typeof response === 'object' &&
+      response !== null &&
+      'success' in response &&
+      'data' in response;
+
+    const payload = isWrappedResponse
+      ? (response as RegisterResponse).data
+      : response;
+
+    let user = undefined as RegisterResponse['data']['user'] | undefined;
+
+    if (payload && typeof payload === 'object' && 'user' in payload) {
+      user = (payload as RegisterResponse['data']).user;
+    } else if (payload && typeof payload === 'object') {
+      user = payload as RegisterResponse['data']['user'];
     }
-    
-    return response;
+
+    if (!user) {
+      const message =
+        isWrappedResponse && 'message' in (response as RegisterResponse)
+          ? (response as RegisterResponse).message
+          : 'Resposta de registro inválida';
+
+      logger.error('Auth Service', `❌ Registro falhou para: ${data.email}`, {
+        message,
+      });
+      throw new Error(message);
+    }
+
+    const normalizedPayload: RegisterResponse['data'] =
+      payload && typeof payload === 'object' && 'user' in payload
+        ? (payload as RegisterResponse['data'])
+        : { user };
+
+    logger.success('Auth Service', `✅ Usuário registrado com sucesso: ${data.email}`);
+
+    const normalizedResponse: RegisterResponse = isWrappedResponse
+      ? (response as RegisterResponse)
+      : {
+          success: true,
+          message: 'Registro realizado com sucesso',
+          data: normalizedPayload,
+        };
+
+    return normalizedResponse;
   }
 
   /**
@@ -70,15 +138,20 @@ export class AuthService {
     logger.info('Auth Service', 'Fazendo logout do usuário');
     apiClient.setToken(null);
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('currentUser');
+      try {
+        window.sessionStorage.removeItem('authToken');
+        window.sessionStorage.removeItem('currentUser');
+        window.localStorage.removeItem('authToken');
+        window.localStorage.removeItem('currentUser');
+      } catch (error) {
+        logger.error('Auth Service', 'Erro ao limpar dados de autenticação do storage', error);
+      }
     }
     logger.success('Auth Service', '✅ Logout realizado com sucesso');
   }
 
   /**
    * Get current user information
-   * Uses cached user data from localStorage
    */
   async getCurrentUser(): Promise<User> {
     logger.debug('Auth Service', 'Buscando dados do usuário atual');
@@ -89,26 +162,74 @@ export class AuthService {
       throw new Error('No authentication token found');
     }
 
-    // Just use cached user from localStorage
-    if (typeof window !== 'undefined') {
-      const cachedUser = localStorage.getItem('currentUser');
-      if (cachedUser) {
+    try {
+      const user = await apiClient.get<User>(`${this.basePath}/me`);
+
+      logger.success('Auth Service', '✅ Dados do usuário atual obtidos do backend', {
+        userId: user.id,
+        email: user.email,
+        roles: user.roles,
+      });
+
+      if (typeof window !== 'undefined') {
         try {
-          const user = JSON.parse(cachedUser);
-          logger.debug('Auth Service', '✅ Usuário encontrado no cache', {
-            userId: user.id,
-            email: user.email
-          });
-          return user;
+          window.sessionStorage.setItem('currentUser', JSON.stringify(user));
+          window.localStorage.removeItem('currentUser');
+          logger.debug('Auth Service', 'Usuário salvo no cache de sessão após consulta ao backend');
         } catch (error) {
-          logger.error('Auth Service', '❌ Erro ao fazer parse do usuário em cache', error);
-          throw new Error('Failed to parse cached user data');
+          logger.error('Auth Service', 'Erro ao salvar usuário no sessionStorage', error);
         }
       }
+
+      return user;
+    } catch (error) {
+      logger.error('Auth Service', '❌ Erro ao obter dados do usuário atual do backend', error);
+
+      if (typeof window !== 'undefined') {
+        const fallbackUser = this.getCachedUser();
+        if (fallbackUser) {
+          return fallbackUser;
+        }
+      }
+
+      throw error instanceof Error
+        ? error
+        : new Error('Failed to fetch current user information');
+    }
+  }
+
+  private getCachedUser(): User | null {
+    if (typeof window === 'undefined') {
+      return null;
     }
 
-    logger.error('Auth Service', '❌ Dados do usuário não encontrados no cache');
-    throw new Error('No cached user data found');
+    try {
+      const cachedUser = window.sessionStorage.getItem('currentUser');
+      if (cachedUser) {
+        const user = JSON.parse(cachedUser) as User;
+        logger.warn('Auth Service', '⚠️ Usando dados do usuário em cache de sessão devido a erro no backend', {
+          userId: user.id,
+          email: user.email,
+        });
+        return user;
+      }
+
+      const legacyUser = window.localStorage.getItem('currentUser');
+      if (legacyUser) {
+        const user = JSON.parse(legacyUser) as User;
+        window.sessionStorage.setItem('currentUser', legacyUser);
+        window.localStorage.removeItem('currentUser');
+        logger.warn('Auth Service', '⚠️ Migrando usuário do localStorage para sessionStorage', {
+          userId: user.id,
+          email: user.email,
+        });
+        return user;
+      }
+    } catch (error) {
+      logger.error('Auth Service', '❌ Erro ao recuperar usuário em cache', error);
+    }
+
+    return null;
   }
 
   /**

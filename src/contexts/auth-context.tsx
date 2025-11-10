@@ -1,8 +1,10 @@
 "use client"
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { toast } from 'sonner';
 import { authService } from '@/services/auth.service';
 import { notificationService } from '@/services/notification.service';
+import { apiClient } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
 import type { User, LoginRequest, RegisterRequest } from '@/types/auth.types';
 
@@ -12,7 +14,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (credentials: LoginRequest) => Promise<void>;
   register: (data: RegisterRequest) => Promise<void>;
-  logout: () => void;
+  logout: (reason?: string) => void;
   refreshUser: () => Promise<void>;
 }
 
@@ -21,6 +23,40 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const forcedLogoutRef = useRef(false);
+
+  const logout = useCallback((reason?: string) => {
+    const isForced = Boolean(reason);
+    forcedLogoutRef.current = isForced;
+    logger.info('Auth Context', '🚪 Iniciando processo de logout...', { reason });
+
+    // Desconectar WebSocket de notificações
+    if (notificationService.isWebSocketConnected()) {
+      logger.info('Auth Context', 'Desconectando WebSocket de notificações...');
+      notificationService.disconnectWebSocket();
+    }
+
+    authService.logout();
+    setUser(null);
+
+    if (typeof window !== 'undefined') {
+      try {
+        window.sessionStorage.removeItem('currentUser');
+        window.localStorage.removeItem('currentUser');
+        logger.debug('Auth Context', 'Dados do usuário removidos do cache local');
+      } catch (error) {
+        logger.error('Auth Context', 'Erro ao remover usuário do cache', error);
+      }
+    }
+
+    if (reason) {
+      toast.warning(reason);
+      logger.warn('Auth Context', 'Logout realizado com motivo', { reason });
+    } else {
+      toast.success('Você saiu da sua conta com segurança.');
+      logger.success('Auth Context', '✅ Logout realizado com sucesso!');
+    }
+  }, []);
 
   // Load user on mount - always fresh from API
   const loadUser = useCallback(async () => {
@@ -47,25 +83,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Keep the user logged in if the token is still valid
       if (!authService.isAuthenticated()) {
         logger.warn('Auth Context', 'Token inválido ou expirado, fazendo logout...');
-        // Token is expired or invalid
-        authService.logout();
-        setUser(null);
+        if (!forcedLogoutRef.current) {
+          logout('Sua sessão expirou. Faça login novamente.');
+        }
       } else {
         logger.warn('Auth Context', 'Token válido mas erro ao buscar usuário, usando cache...');
         // Token is still valid, try to use cached user
         if (typeof window !== 'undefined') {
-          const cachedUser = localStorage.getItem('currentUser');
-          if (cachedUser) {
-            try {
-              const user = JSON.parse(cachedUser);
-              setUser(user);
-              logger.info('Auth Context', '✅ Usando dados do usuário em cache', {
-                userId: user.id,
-                email: user.email
+          try {
+            const cachedUser = window.sessionStorage.getItem('currentUser');
+            if (cachedUser) {
+              const cachedParsed = JSON.parse(cachedUser);
+              setUser(cachedParsed);
+              toast.info('Não foi possível atualizar suas informações. Exibindo dados em cache.', {
+                description: 'Verifique sua conexão e tente novamente.',
               });
-            } catch (e) {
-              logger.error('Auth Context', 'Erro ao fazer parse do usuário em cache', e);
+              logger.info('Auth Context', '✅ Usando dados do usuário em cache', {
+                userId: cachedParsed.id,
+                email: cachedParsed.email
+              });
             }
+          } catch (cacheError) {
+            logger.error('Auth Context', 'Erro ao fazer parse do usuário em cache', cacheError);
           }
         }
       }
@@ -73,11 +112,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
       logger.debug('Auth Context', 'Carregamento do usuário finalizado');
     }
-  }, []);
+  }, [logout]);
 
   useEffect(() => {
     loadUser();
   }, [loadUser]);
+
+  useEffect(() => {
+    const unsubscribe = apiClient.onUnauthorized(() => {
+      logger.warn('Auth Context', 'Notificação de token inválido recebida via API Client');
+      if (!forcedLogoutRef.current) {
+        logout('Sua sessão expirou. Faça login novamente.');
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [logout]);
 
   const login = useCallback(async (credentials: LoginRequest) => {
     logger.info('Auth Context', '🔐 Iniciando processo de login...', {
@@ -97,11 +149,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
         
         setUser(response.data.user);
+        forcedLogoutRef.current = false;
         
-        // Store user in localStorage for persistence
+        // Store user in sessionStorage for persistence
         if (typeof window !== 'undefined') {
-          localStorage.setItem('currentUser', JSON.stringify(response.data.user));
-          logger.debug('Auth Context', 'Usuário salvo no localStorage');
+          try {
+            window.sessionStorage.setItem('currentUser', JSON.stringify(response.data.user));
+            window.localStorage.removeItem('currentUser');
+            logger.debug('Auth Context', 'Usuário salvo no sessionStorage');
+          } catch (error) {
+            logger.error('Auth Context', 'Erro ao salvar usuário no sessionStorage', error);
+          }
         }
 
         // Conectar WebSocket para notificações se for admin
@@ -111,6 +169,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             logger.info('Auth Context', 'Nova notificação recebida via WebSocket no contexto');
           });
         }
+
+        const displayName = response.data.user.firstName || response.data.user.email;
+        toast.success(`Bem-vindo de volta, ${displayName}!`, {
+          description: 'Você foi autenticado com sucesso.',
+        });
       } else {
         const errorMsg = response.message || 'Login failed';
         logger.error('Auth Context', '❌ Login falhou', { message: errorMsg });
@@ -118,6 +181,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       logger.error('Auth Context', '❌ Erro durante login', error);
+      const message = error instanceof Error ? error.message : 'Não foi possível concluir o login. Tente novamente.';
+      toast.error('Falha ao entrar', {
+        description: message,
+      });
       throw error;
     } finally {
       setIsLoading(false);
@@ -128,7 +195,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = useCallback(async (data: RegisterRequest) => {
     logger.info('Auth Context', '📝 Iniciando processo de registro...', {
       email: data.email,
-      name: data.name
+      name: `${data.firstName} ${data.lastName}`.trim()
     });
     
     setIsLoading(true);
@@ -144,36 +211,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logger.success('Auth Context', '✅ Registro realizado com sucesso!', {
         email: data.email
       });
+      toast.success('Cadastro concluído!', {
+        description: 'Verifique seu e-mail para confirmar o acesso.',
+      });
       
       // Note: After registration, user may need to verify email
       // So we don't automatically log them in
     } catch (error) {
       logger.error('Auth Context', '❌ Erro durante registro', error);
+      const message = error instanceof Error ? error.message : 'Não foi possível concluir o cadastro.';
+      toast.error('Falha ao cadastrar', {
+        description: message,
+      });
       throw error;
     } finally {
       setIsLoading(false);
       logger.debug('Auth Context', 'Processo de registro finalizado');
     }
-  }, []);
-
-  const logout = useCallback(() => {
-    logger.info('Auth Context', '🚪 Iniciando processo de logout...');
-    
-    // Desconectar WebSocket de notificações
-    if (notificationService.isWebSocketConnected()) {
-      logger.info('Auth Context', 'Desconectando WebSocket de notificações...');
-      notificationService.disconnectWebSocket();
-    }
-    
-    authService.logout();
-    setUser(null);
-    
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('currentUser');
-      logger.debug('Auth Context', 'Dados do usuário removidos do localStorage');
-    }
-    
-    logger.success('Auth Context', '✅ Logout realizado com sucesso!');
   }, []);
 
   const refreshUser = useCallback(async () => {
@@ -182,7 +236,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // Clear cached user to force fresh fetch
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('currentUser');
+        window.sessionStorage.removeItem('currentUser');
+        window.localStorage.removeItem('currentUser');
         logger.debug('Auth Context', '🗑️ Cache do usuário limpo');
       }
       
@@ -195,12 +250,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       
       if (typeof window !== 'undefined') {
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-        logger.debug('Auth Context', 'Novos dados do usuário salvos no localStorage');
+        window.sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+        window.localStorage.removeItem('currentUser');
+        logger.debug('Auth Context', 'Novos dados do usuário salvos no sessionStorage');
       }
     } catch (error) {
       logger.error('Auth Context', '❌ Erro ao atualizar dados do usuário', error);
-      logout();
+      const message = error instanceof Error ? error.message : '';
+      const isUnauthorized = message.toLowerCase().includes('unauthorized') || message.includes('401');
+      logout(
+        isUnauthorized
+          ? 'Sua sessão expirou. Faça login novamente.'
+          : 'Não foi possível atualizar seus dados. Faça login novamente para continuar.'
+      );
     }
   }, [logout]);
 

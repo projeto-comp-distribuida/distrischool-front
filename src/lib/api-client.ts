@@ -13,33 +13,78 @@ export interface ApiConfig {
 class ApiClient {
   private baseURL: string;
   private token: string | null = null;
+  private unauthorizedHandlers = new Set<() => void>();
 
   constructor(baseURL: string) {
     this.baseURL = baseURL;
-    // Try to get token from localStorage if available
+    // Try to get token from sessionStorage if available
     if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem('authToken');
+      try {
+        const sessionToken = window.sessionStorage.getItem('authToken');
+        if (sessionToken) {
+          this.token = sessionToken;
+        } else {
+          // Migration path: move existing token from localStorage to sessionStorage if present
+          const legacyToken = window.localStorage.getItem('authToken');
+          if (legacyToken) {
+            this.token = legacyToken;
+            window.sessionStorage.setItem('authToken', legacyToken);
+            window.localStorage.removeItem('authToken');
+          }
+        }
+      } catch (error) {
+        logger.error('API Client', 'Erro ao recuperar token armazenado', error);
+        this.token = null;
+      }
     }
   }
 
   setToken(token: string | null) {
     this.token = token;
     if (typeof window !== 'undefined') {
-      if (token) {
-        localStorage.setItem('authToken', token);
-        logger.success('API Client', 'Token de autenticação definido', { 
-          hasToken: !!token,
-          tokenLength: token?.length 
-        });
-      } else {
-        localStorage.removeItem('authToken');
-        logger.info('API Client', 'Token de autenticação removido');
+      try {
+        if (token) {
+          window.sessionStorage.setItem('authToken', token);
+          // Garantir remoção de tokens antigos
+          window.localStorage.removeItem('authToken');
+          logger.success('API Client', 'Token de autenticação definido', { 
+            hasToken: !!token,
+            tokenLength: token?.length 
+          });
+        } else {
+          window.sessionStorage.removeItem('authToken');
+          window.localStorage.removeItem('authToken');
+          logger.info('API Client', 'Token de autenticação removido');
+        }
+      } catch (error) {
+        logger.error('API Client', 'Erro ao persistir token', error);
       }
     }
   }
 
   getToken(): string | null {
     return this.token;
+  }
+
+  onUnauthorized(callback: () => void): () => void {
+    this.unauthorizedHandlers.add(callback);
+    return () => {
+      this.unauthorizedHandlers.delete(callback);
+    };
+  }
+
+  private notifyUnauthorized() {
+    if (!this.unauthorizedHandlers.size) {
+      return;
+    }
+
+    this.unauthorizedHandlers.forEach((handler) => {
+      try {
+        handler();
+      } catch (error) {
+        logger.error('API Client', 'Erro ao executar handler de unauthorized', error);
+      }
+    });
   }
 
   private getHeaders(customHeaders?: Record<string, string>): HeadersInit {
@@ -301,6 +346,14 @@ class ApiClient {
           logger.error('API Client', 'Erro ao ler texto da resposta', e);
           errorMessage = `Erro HTTP ${response.status}: ${response.statusText}`;
         }
+      }
+
+      if (response.status === 401) {
+        if (this.token) {
+          logger.warn('API Client', 'Token inválido ou expirado detectado. Limpando credenciais e notificando assinantes.');
+        }
+        this.setToken(null);
+        this.notifyUnauthorized();
       }
 
       throw new Error(errorMessage);

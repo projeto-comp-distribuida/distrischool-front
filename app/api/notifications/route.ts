@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NotificationsResponse, KafkaEvent } from '@/types/notification.types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.7:8080';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://distrischool.ddns.net';
 
 /**
  * Convert Kafka event to notification

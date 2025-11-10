@@ -69,7 +69,6 @@ class Logger {
     // Log no console
     if (data) {
       console.log(logMessage);
-      console.log('📦 Dados:', data);
     } else {
       console.log(logMessage);
     }

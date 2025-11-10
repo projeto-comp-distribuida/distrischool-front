@@ -1,8 +1,28 @@
+"use client"
+
+import { useEffect, useRef } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 import { LoginForm } from "@/components/login-form"
+import { useAuth } from "@/contexts/auth-context"
 import { BookOpen } from "lucide-react"
 
 export default function LoginPage() {
+  const router = useRouter()
+  const { isAuthenticated, isLoading } = useAuth()
+  const hasNotifiedRef = useRef(false)
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && !hasNotifiedRef.current) {
+      hasNotifiedRef.current = true
+      toast.info("Você já está autenticado.", {
+        description: "Redirecionando você para o painel.",
+      })
+      router.replace("/dashboard")
+    }
+  }, [isAuthenticated, isLoading, router])
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-muted/30">
       <div className="w-full max-w-md">
