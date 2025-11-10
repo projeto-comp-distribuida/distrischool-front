@@ -1,0 +1,347 @@
+version: '3.8'
+
+# Docker Compose para desenvolvimento local COM hot reloading ⚡
+# Use: docker-compose -f docker-compose-dev.yml up
+# Ou use o script: ./scripts/dev-docker.sh
+# 
+# Recursos:
+# - Hot reloading automático (mudanças em src/ são detectadas)
+# - Debug remoto na porta 5005
+# - LiveReload na porta 35729
+# 
+# IMPORTANTE: Este arquivo é APENAS para desenvolvimento local
+# Produção roda em Kubernetes (Azure AKS), não em Docker Compose
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: distrischool-postgres
+    environment:
+      POSTGRES_DB: distrischool_auth
+      POSTGRES_USER: distrischool
+      POSTGRES_PASSWORD: distrischool123
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - distrischool-network
+    entrypoint: ["docker-entrypoint.sh", "postgres"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U distrischool -d distrischool_auth"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: distrischool-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - distrischool-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: redis-server --appendonly yes
+
+  # Zookeeper - Necessário para o Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: distrischool-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - distrischool-network
+
+  # Kafka
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: distrischool-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://192.168.1.7:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - distrischool-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:29092"]
+      interval: 15s
+      timeout: 30s
+      retries: 3
+      start_period: 60s
+
+  # Kafka UI (Opcional - Para visualizar tópicos e mensagens)
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: distrischool-kafka-ui
+    depends_on:
+      - kafka
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    networks:
+      - distrischool-network
+
+  # Spring Cloud Gateway - API Gateway Service
+  api-gateway-dev:
+    image: distrischooldevacr.azurecr.io/api-gateway:latest
+    container_name: distrischool-api-gateway-dev
+    ports:
+      - "8080:8080"
+    environment:
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: dev
+      # Redis Configuration for Rate Limiter
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_REDIS_PASSWORD: ""
+      # CORS Configuration for Spring Cloud Gateway - Use explicit origins for dev
+      SPRING_CLOUD_GATEWAY_GLOBAL_CORS_CORS_CONFIGURATIONS____ALLOWED_ORIGINS: "http://192.168.1.7:3000,http://192.168.1.7:5173"
+      SPRING_CLOUD_GATEWAY_GLOBAL_CORS_CORS_CONFIGURATIONS____ALLOWED_METHODS: "GET,POST,PUT,DELETE,OPTIONS,PATCH"
+      SPRING_CLOUD_GATEWAY_GLOBAL_CORS_CORS_CONFIGURATIONS____ALLOWED_HEADERS: "*"
+      SPRING_CLOUD_GATEWAY_GLOBAL_CORS_CORS_CONFIGURATIONS____ALLOW_CREDENTIALS: "true"
+      SPRING_CLOUD_GATEWAY_GLOBAL_CORS_CORS_CONFIGURATIONS____MAX_AGE: "3600"
+      # Gateway route configurations
+      SPRING_CLOUD_GATEWAY_ROUTES_0_ID: auth-service
+      SPRING_CLOUD_GATEWAY_ROUTES_0_URI: http://microservice-auth-dev:8080
+      SPRING_CLOUD_GATEWAY_ROUTES_0_PREDICATES_0: Path=/api/v1/auth/**
+      # Remove Origin and Referer headers to prevent CORS issues in backend
+      SPRING_CLOUD_GATEWAY_ROUTES_0_FILTERS_0: RemoveRequestHeader=Origin
+      SPRING_CLOUD_GATEWAY_ROUTES_0_FILTERS_1: RemoveRequestHeader=Referer
+      # Users Service Route - Handle user lookup endpoints
+      SPRING_CLOUD_GATEWAY_ROUTES_1_ID: users-service
+      SPRING_CLOUD_GATEWAY_ROUTES_1_URI: http://microservice-auth-dev:8080
+      SPRING_CLOUD_GATEWAY_ROUTES_1_PREDICATES_0: Path=/api/v1/users/**
+      SPRING_CLOUD_GATEWAY_ROUTES_1_FILTERS_0: RemoveRequestHeader=Origin
+      SPRING_CLOUD_GATEWAY_ROUTES_1_FILTERS_1: RemoveRequestHeader=Referer
+      # Student Service Route
+      SPRING_CLOUD_GATEWAY_ROUTES_2_ID: student-service
+      SPRING_CLOUD_GATEWAY_ROUTES_2_URI: http://student-management-service-dev:8080
+      SPRING_CLOUD_GATEWAY_ROUTES_2_PREDICATES_0: Path=/api/v1/students/**
+      SPRING_CLOUD_GATEWAY_ROUTES_2_FILTERS_0: RemoveRequestHeader=Origin
+      SPRING_CLOUD_GATEWAY_ROUTES_2_FILTERS_1: RemoveRequestHeader=Referer
+      # Teacher Service Route
+      SPRING_CLOUD_GATEWAY_ROUTES_3_ID: teacher-service
+      SPRING_CLOUD_GATEWAY_ROUTES_3_URI: http://microservice-teacher-dev:8080
+      SPRING_CLOUD_GATEWAY_ROUTES_3_PREDICATES_0: Path=/api/v1/teachers/**
+      SPRING_CLOUD_GATEWAY_ROUTES_3_FILTERS_0: RemoveRequestHeader=Origin
+      SPRING_CLOUD_GATEWAY_ROUTES_3_FILTERS_1: RemoveRequestHeader=Referer
+    networks:
+      - distrischool-network
+    depends_on:
+      redis:
+        condition: service_healthy
+      microservice-auth-dev:
+        condition: service_started
+      student-management-service-dev:
+        condition: service_started
+      microservice-teacher-dev:
+        condition: service_started
+
+  # Microserviço Auth - Ambiente de Desenvolvimento com Hot Reloading
+  microservice-auth-dev:
+    image: ${ACR_REGISTRY}/microservice-auth:latest
+    container_name: distrischool-microservice-auth-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8081:8080"
+      - "5005:5005"   # Porta para debug remoto
+      - "35729:35729" # Porta para LiveReload
+    environment:
+      # Configurações básicas do container
+      SERVER_PORT: 8080
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+      SPRING_DEVTOOLS_RESTART_POLL_INTERVAL: "1000"
+      SPRING_DEVTOOLS_RESTART_QUIET_PERIOD: "400"
+      # Configurações do PostgreSQL (container interno)
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/distrischool_auth
+      SPRING_DATASOURCE_USERNAME: distrischool
+      SPRING_DATASOURCE_PASSWORD: distrischool123
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      # Configurações do Redis (container interno)
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_REDIS_PASSWORD: ""
+      # Configurações do Flyway
+      SPRING_FLYWAY_ENABLED: "false"
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
+      SPRING_FLYWAY_IGNORE_MISSING_MIGRATIONS: "true"
+      # Configurações do JPA/Hibernate - criar tabelas automaticamente
+      SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+      SPRING_JPA_SHOW_SQL: "false"
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
+      # Configurações Auth0 (OAuth2) - Auth0 gerencia completamente os JWT tokens
+      AUTH0_ENABLED: ${AUTH0_ENABLED:-false}
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN}
+      AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID}
+      AUTH0_CLIENT_SECRET: ${AUTH0_CLIENT_SECRET}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
+      AUTH0_CONNECTION: ${AUTH0_CONNECTION:-Username-Password-Authentication}
+      # CORS Configuration - Allow requests from API Gateway
+      # The API Gateway handles CORS for the frontend, but backend services
+      # still need to allow requests from the gateway host (192.168.1.7:8080)
+      # Format: using Spring Boot property syntax
+      SPRING_WEB_CORS_ALLOWED_ORIGINS: "http://192.168.1.7:8080,http://192.168.1.7:3000,http://192.168.1.7:5173,http://localhost:3000,http://localhost:5173"
+      SPRING_WEB_CORS_ALLOWED_METHODS: "GET,POST,PUT,DELETE,OPTIONS,PATCH,HEAD"
+      SPRING_WEB_CORS_ALLOWED_HEADERS: "*"
+      SPRING_WEB_CORS_ALLOW_CREDENTIALS: "true"
+      SPRING_WEB_CORS_MAX_AGE: "3600"
+      # Allow any origin (for development) - backend should not enforce CORS
+      # since the gateway handles it
+      SPRING_WEB_CORS_ENABLED: "true"
+      # Configurações de Segurança - valores padrão, sobrescritos pelo .env
+      MAX_LOGIN_ATTEMPTS: ${MAX_LOGIN_ATTEMPTS:-5}
+      ACCOUNT_LOCK_DURATION: ${ACCOUNT_LOCK_DURATION:-30}
+      PASSWORD_RESET_TOKEN_EXPIRATION: ${PASSWORD_RESET_TOKEN_EXPIRATION:-2}
+      EMAIL_VERIFICATION_TOKEN_EXPIRATION: ${EMAIL_VERIFICATION_TOKEN_EXPIRATION:-24}
+    volumes:
+      # Cache do Maven para não baixar dependências toda vez
+      - maven-cache:/root/.m2
+    networks:
+      - distrischool-network
+    # Remove o healthcheck para facilitar o desenvolvimento
+    # O Spring Boot DevTools pode reiniciar frequentemente
+
+  # Microserviço Student Management - Ambiente de Desenvolvimento com Hot Reloading
+  student-management-service-dev:
+    image: ${ACR_REGISTRY}/microservice-student-management-service:latest
+    container_name: student-management-service-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8082:8080"
+      - "5006:5005"   # Porta para debug remoto (diferente para evitar conflito)
+      - "35730:35729" # Porta para LiveReload (diferente para evitar conflito)
+    environment:
+      SERVER_PORT: 8080
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+      SPRING_DEVTOOLS_RESTART_POLL_INTERVAL: "1000"
+      SPRING_DEVTOOLS_RESTART_QUIET_PERIOD: "400"
+      # Configurações do PostgreSQL
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/distrischool_students
+      SPRING_DATASOURCE_USERNAME: distrischool
+      SPRING_DATASOURCE_PASSWORD: distrischool123
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      # Configurações do Redis
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_REDIS_PASSWORD: ""
+      # Configurações do Flyway
+      SPRING_FLYWAY_ENABLED: "false"
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
+      # CORS Configuration - Allow requests from API Gateway
+      SPRING_WEB_CORS_ALLOWED_ORIGINS: "http://192.168.1.7:8080,http://192.168.1.7:3000,http://192.168.1.7:5173"
+      SPRING_WEB_CORS_ALLOWED_METHODS: "GET,POST,PUT,DELETE,OPTIONS,PATCH"
+      SPRING_WEB_CORS_ALLOWED_HEADERS: "*"
+      SPRING_WEB_CORS_ALLOW_CREDENTIALS: "true"
+    volumes:
+      # Cache do Maven para não baixar dependências toda vez
+      - maven-cache:/root/.m2
+    networks:
+      - distrischool-network
+    # Remove o healthcheck para facilitar o desenvolvimento
+    # O Spring Boot DevTools pode reiniciar frequentemente
+
+  # Microserviço TEACHER - Ambiente de Desenvolvimento com Hot Reloading
+  microservice-teacher-dev:
+    image: ${ACR_REGISTRY}/microservice-teacher-management-service:latest
+    container_name: microservice-teacher-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8083:8080"
+      - "5007:5005"   # Porta para debug remoto (diferente para evitar conflito)
+      - "35731:35729" # Porta para LiveReload (diferente para evitar conflito)
+    environment:
+      SERVER_PORT: 8080
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DEVTOOLS_RESTART_ENABLED: "true"
+      SPRING_DEVTOOLS_LIVERELOAD_ENABLED: "true"
+      SPRING_DEVTOOLS_RESTART_POLL_INTERVAL: "1000"
+      SPRING_DEVTOOLS_RESTART_QUIET_PERIOD: "400"
+      # Configurações do PostgreSQL
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/distrischool_teacher
+      SPRING_DATASOURCE_USERNAME: distrischool
+      SPRING_DATASOURCE_PASSWORD: distrischool123
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      # Configurações do Redis
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
+      SPRING_REDIS_PASSWORD: ""
+      # Configurações do Flyway
+      SPRING_FLYWAY_ENABLED: "false"
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
+      # CORS disabled here - API Gateway handles CORS  
+      SPRING_WEB_CORS_ALLOWED_ORIGINS: ""
+      SPRING_WEB_CORS_ALLOWED_METHODS: ""
+      SPRING_WEB_CORS_ALLOWED_HEADERS: ""
+      SPRING_WEB_CORS_ALLOW_CREDENTIALS: "false"
+    volumes:
+      # Cache do Maven para não baixar dependências toda vez
+      - maven-cache:/root/.m2
+    networks:
+      - distrischool-network
+    # Remove o healthcheck para facilitar o desenvolvimento
+    # O Spring Boot DevTools pode reiniciar frequentemente
+
+networks:
+  distrischool-network:
+    driver: bridge
+
+volumes:
+  maven-cache:
+    driver: local
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local

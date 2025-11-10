@@ -1,0 +1,163 @@
+# Spring Cloud Gateway Configuration
+# This file contains the configuration for the API Gateway service
+
+# Server Configuration
+server:
+  port: 8080
+
+# Spring Configuration
+spring:
+  application:
+    name: api-gateway
+  
+  profiles:
+    active: dev
+  
+  cloud:
+    gateway:
+      # Global CORS configuration
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origins: 
+              - "http://192.168.1.7:3000"
+              - "http://192.168.1.7:5173"
+            allowed-methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowed-headers: "*"
+            allow-credentials: true
+            max-age: 3600
+      
+      # Route definitions
+      routes:
+        # Auth Service Route
+        - id: auth-service
+          uri: http://microservice-auth-dev:8080
+          predicates:
+            - Path=/api/v1/auth/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                redis-rate-limiter.requestedTokens: 1
+            - name: CircuitBreaker
+              args:
+                name: auth-circuit-breaker
+                fallbackUri: forward:/fallback/auth
+        
+        # Student Service Route
+        - id: student-service
+          uri: http://student-management-service-dev:8080
+          predicates:
+            - Path=/api/v1/students/**
+          filters:
+            - StripPrefix=3
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                redis-rate-limiter.requestedTokens: 1
+            - name: CircuitBreaker
+              args:
+                name: student-circuit-breaker
+                fallbackUri: forward:/fallback/student
+        
+        # Teacher Service Route
+        - id: teacher-service
+          uri: http://microservice-teacher-dev:8080
+          predicates:
+            - Path=/api/teachers/**
+          filters:
+            - StripPrefix=2
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+                redis-rate-limiter.requestedTokens: 1
+            - name: CircuitBreaker
+              args:
+                name: teacher-circuit-breaker
+                fallbackUri: forward:/fallback/teacher
+      
+      # Default filters applied to all routes
+      default-filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 5
+            redis-rate-limiter.burstCapacity: 10
+            redis-rate-limiter.requestedTokens: 1
+        - AddRequestHeader=X-Gateway-Source, api-gateway
+        - AddResponseHeader=X-Gateway-Response-Time, ${T(java.lang.System).currentTimeMillis()}
+
+# Management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,gateway
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Logging configuration
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web.reactive: DEBUG
+    reactor.netty: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# Circuit Breaker configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      auth-circuit-breaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+      student-circuit-breaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+      teacher-circuit-breaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+
+# Redis configuration for rate limiting
+  redis:
+    host: redis
+    port: 6379
+    password: ""
+    timeout: 2000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: -1ms
