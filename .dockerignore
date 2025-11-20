@@ -1,0 +1,17 @@
+.next
+out
+dist
+node_modules
+.pnpm-store
+.pnpm
+*.log
+package-lock.json
+yarn.lock
+.git
+.gitignore
+.DS_Store
+.idea
+.vscode
+.env
+.env.*
+
