@@ -32,6 +32,9 @@ jobs:
       with:
         version: 8
         run_install: false
+        
+    - name: Enable pnpm via Corepack
+      run: corepack enable pnpm
       
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
