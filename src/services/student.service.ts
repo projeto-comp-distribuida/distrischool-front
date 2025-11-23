@@ -14,7 +14,7 @@ import type {
 import type { ApiResponse } from '@/types/auth.types';
 
 export class StudentService {
-  private basePath = '/api/v1/students';
+  private basePath = process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || '/api/v1/students';
 
   /**
    * Get all students with pagination
@@ -62,9 +62,9 @@ export class StudentService {
       email: data.email,
       registrationNumber: data.registrationNumber
     });
-    
+
     const headers = userId ? { 'X-User-Id': userId } : undefined;
-    
+
     // Filter out fields that backend doesn't support yet
     const backendData = {
       fullName: data.fullName,
@@ -79,7 +79,7 @@ export class StudentService {
       status: data.status,
       notes: data.notes,
     };
-    
+
     try {
       const student = await apiClient.post<Student>(this.basePath, backendData, { headers });
       logger.success('Student Service', `✅ Estudante criado com sucesso: ${student.fullName}`, {
@@ -116,9 +116,9 @@ export class StudentService {
       fullName: data.fullName,
       email: data.email
     });
-    
+
     const headers = userId ? { 'X-User-Id': userId } : undefined;
-    
+
     // Filter out fields that backend doesn't support yet
     const backendData = {
       fullName: data.fullName,
@@ -133,7 +133,7 @@ export class StudentService {
       status: data.status,
       notes: data.notes,
     };
-    
+
     try {
       const student = await apiClient.put<Student>(`${this.basePath}/${id}`, backendData, { headers });
       logger.success('Student Service', `✅ Estudante atualizado com sucesso: ${student.fullName}`, {
@@ -151,9 +151,9 @@ export class StudentService {
    */
   async delete(id: number, userId?: string): Promise<ApiResponse> {
     logger.info('Student Service', `Tentando deletar estudante ID: ${id}`);
-    
+
     const headers = userId ? { 'X-User-Id': userId } : undefined;
-    
+
     try {
       const response = await apiClient.delete<ApiResponse>(`${this.basePath}/${id}`, { headers });
       logger.success('Student Service', `✅ Estudante deletado com sucesso ID: ${id}`);

@@ -15,19 +15,19 @@ import type {
 } from '@/types/auth.types';
 
 export class AuthService {
-  private basePath = '/api/v1/auth';
+  private basePath = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL || '/api/v1/auth';
 
   /**
    * Login with email and password
    */
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     logger.info('Auth Service', `Tentando fazer login para: ${credentials.email}`);
-    
+
     const response = await apiClient.post<LoginResponse>(
       `${this.basePath}/login`,
       credentials
     );
-    
+
     // Store the token
     if (response.success && response.data.token) {
       apiClient.setToken(response.data.token);
@@ -46,12 +46,12 @@ export class AuthService {
    */
   async register(data: RegisterRequest): Promise<RegisterResponse> {
     logger.info('Auth Service', `Tentando registrar novo usuário: ${data.email}`);
-    
+
     const response = await apiClient.post<RegisterResponse>(
       `${this.basePath}/register`,
       data
     );
-    
+
     if (response.success) {
       logger.success('Auth Service', `✅ Usuário registrado com sucesso: ${data.email}`);
     } else {
@@ -59,7 +59,7 @@ export class AuthService {
         message: response.message
       });
     }
-    
+
     return response;
   }
 
@@ -82,7 +82,7 @@ export class AuthService {
    */
   async getCurrentUser(): Promise<User> {
     logger.debug('Auth Service', 'Buscando dados do usuário atual');
-    
+
     const token = apiClient.getToken();
     if (!token) {
       logger.error('Auth Service', '❌ Token de autenticação não encontrado');

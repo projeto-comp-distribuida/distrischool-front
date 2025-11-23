@@ -13,7 +13,7 @@ const getWebSocketClient = () => {
 };
 
 class NotificationService {
-  private basePath = '/api/v1/notifications';
+  private basePath = process.env.NEXT_PUBLIC_NOTIFICATION_SERVICE_URL || '/api/v1/notifications';
   private wsConnected = false;
 
   /**
@@ -98,7 +98,7 @@ class NotificationService {
    */
   connectWebSocket(token: string, onNotification: (notification: Notification) => void): void {
     const wsClient = getWebSocketClient();
-    
+
     // Verificar se está no cliente
     if (!wsClient) {
       logger.warn('Notification Service', 'WebSocket não disponível no servidor');
@@ -117,7 +117,7 @@ class NotificationService {
     }
 
     logger.info('Notification Service', 'Conectando ao WebSocket para notificações em tempo real...');
-    
+
     // Handler para mensagens recebidas
     const unsubscribeMessage = wsClient.onMessage((message: WebSocketMessage) => {
       logger.info('Notification Service', '📨 Mensagem WebSocket recebida', {
@@ -133,7 +133,7 @@ class NotificationService {
             type: notification.type,
             title: notification.title
           });
-          
+
           onNotification(notification);
         } catch (error) {
           logger.error('Notification Service', 'Erro ao processar notificação do WebSocket', error);
@@ -151,7 +151,7 @@ class NotificationService {
     const unsubscribeStatus = wsClient.onStatusChange((status: 'disconnected' | 'connecting' | 'connected' | 'error') => {
       logger.info('Notification Service', `Status WebSocket alterado: ${status}`);
       this.wsConnected = status === 'connected';
-      
+
       if (status === 'connected') {
         logger.success('Notification Service', '✅ WebSocket conectado com sucesso!');
       } else if (status === 'disconnected') {
@@ -182,7 +182,7 @@ class NotificationService {
    */
   disconnectWebSocket(): void {
     const wsClient = getWebSocketClient();
-    
+
     // Verificar se está no cliente
     if (!wsClient) {
       return;
@@ -219,7 +219,7 @@ class NotificationService {
    */
   async markAsRead(notificationId: string): Promise<void> {
     logger.info('Notification Service', `Marcando notificação como lida: ${notificationId}`);
-    
+
     try {
       await apiClient.put(`${this.basePath}/${notificationId}/read`);
       logger.success('Notification Service', `✅ Notificação ${notificationId} marcada como lida`);
@@ -234,7 +234,7 @@ class NotificationService {
    */
   async markAllAsRead(): Promise<void> {
     logger.info('Notification Service', 'Marcando todas as notificações como lidas');
-    
+
     try {
       await apiClient.put(`${this.basePath}/read-all`);
       logger.success('Notification Service', '✅ Todas as notificações marcadas como lidas');
@@ -249,7 +249,7 @@ class NotificationService {
    */
   async deleteNotification(notificationId: string): Promise<void> {
     logger.info('Notification Service', `Deletando notificação: ${notificationId}`);
-    
+
     try {
       await apiClient.delete(`${this.basePath}/${notificationId}`);
       logger.success('Notification Service', `✅ Notificação ${notificationId} deletada`);
@@ -286,7 +286,7 @@ class NotificationService {
    */
   private parseNotification(data: any): Notification {
     logger.debug('Notification Service', 'Parseando notificação', { data });
-    
+
     // Se já é uma Notification válida, retornar
     if (data.id && data.type && data.title && data.message) {
       return data as Notification;
