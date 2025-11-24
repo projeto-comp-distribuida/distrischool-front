@@ -2,8 +2,15 @@
 
 import { logger } from './logger';
 
+// Type declaration for Next.js environment variables
+declare const process: {
+  env: {
+    NEXT_PUBLIC_API_URL?: string;
+  };
+};
+
 // Using API Gateway
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://distrischool.ddns.net';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://distrischool.ddns.net/api/v1';
 
 export interface ApiConfig {
   headers?: Record<string, string>;
@@ -47,9 +54,9 @@ class ApiClient {
           window.sessionStorage.setItem('authToken', token);
           // Garantir remoção de tokens antigos
           window.localStorage.removeItem('authToken');
-          logger.success('API Client', 'Token de autenticação definido', { 
+          logger.success('API Client', 'Token de autenticação definido', {
             hasToken: !!token,
-            tokenLength: token?.length 
+            tokenLength: token?.length
           });
         } else {
           window.sessionStorage.removeItem('authToken');
@@ -102,7 +109,7 @@ class ApiClient {
 
   private buildURL(path: string, params?: Record<string, any>): string {
     const url = new URL(`${this.baseURL}${path}`);
-    
+
     if (params) {
       Object.keys(params).forEach(key => {
         if (params[key] !== undefined && params[key] !== null) {
@@ -117,13 +124,13 @@ class ApiClient {
   async get<T>(path: string, config?: ApiConfig): Promise<T> {
     const url = this.buildURL(path, config?.params);
     const startTime = Date.now();
-    
-    logger.info('API Client', `GET ${path}`, { 
+
+    logger.info('API Client', `GET ${path}`, {
       url: url.replace(this.token || '', '***'),
       hasToken: !!this.token,
-      params: config?.params 
+      params: config?.params
     });
-    
+
     try {
       const response = await fetch(url, {
         method: 'GET',
@@ -131,7 +138,7 @@ class ApiClient {
       });
 
       const duration = Date.now() - startTime;
-      logger.success('API Client', `GET ${path} - ${response.status}`, { 
+      logger.success('API Client', `GET ${path} - ${response.status}`, {
         duration: `${duration}ms`,
         status: response.status,
         statusText: response.statusText
@@ -141,7 +148,7 @@ class ApiClient {
     } catch (error) {
       const duration = Date.now() - startTime;
       logger.error('API Client', `GET ${path} falhou`, error);
-      
+
       if (error instanceof TypeError && error.message.includes('fetch')) {
         const errorMsg = 'Não foi possível conectar ao servidor. Verifique se o API Gateway está acessível';
         logger.error('API Client', errorMsg, { url, duration: `${duration}ms` });
@@ -154,15 +161,15 @@ class ApiClient {
   async post<T>(path: string, data?: any, config?: ApiConfig): Promise<T> {
     const url = this.buildURL(path, config?.params);
     const startTime = Date.now();
-    
-    logger.info('API Client', `POST ${path}`, { 
+
+    logger.info('API Client', `POST ${path}`, {
       url: url.replace(this.token || '', '***'),
       hasToken: !!this.token,
       hasData: !!data,
       dataKeys: data ? Object.keys(data) : [],
-      params: config?.params 
+      params: config?.params
     });
-    
+
     try {
       const response = await fetch(url, {
         method: 'POST',
@@ -171,7 +178,7 @@ class ApiClient {
       });
 
       const duration = Date.now() - startTime;
-      logger.success('API Client', `POST ${path} - ${response.status}`, { 
+      logger.success('API Client', `POST ${path} - ${response.status}`, {
         duration: `${duration}ms`,
         status: response.status,
         statusText: response.statusText
@@ -181,7 +188,7 @@ class ApiClient {
     } catch (error) {
       const duration = Date.now() - startTime;
       logger.error('API Client', `POST ${path} falhou`, error);
-      
+
       if (error instanceof TypeError && error.message.includes('fetch')) {
         const errorMsg = 'Não foi possível conectar ao servidor. Verifique se o API Gateway está acessível';
         logger.error('API Client', errorMsg, { url, duration: `${duration}ms` });
@@ -194,14 +201,14 @@ class ApiClient {
   async put<T>(path: string, data?: any, config?: ApiConfig): Promise<T> {
     const url = this.buildURL(path, config?.params);
     const startTime = Date.now();
-    
-    logger.info('API Client', `PUT ${path}`, { 
+
+    logger.info('API Client', `PUT ${path}`, {
       url: url.replace(this.token || '', '***'),
       hasToken: !!this.token,
       hasData: !!data,
-      params: config?.params 
+      params: config?.params
     });
-    
+
     try {
       const response = await fetch(url, {
         method: 'PUT',
@@ -210,7 +217,7 @@ class ApiClient {
       });
 
       const duration = Date.now() - startTime;
-      logger.success('API Client', `PUT ${path} - ${response.status}`, { 
+      logger.success('API Client', `PUT ${path} - ${response.status}`, {
         duration: `${duration}ms`,
         status: response.status
       });
@@ -219,7 +226,7 @@ class ApiClient {
     } catch (error) {
       const duration = Date.now() - startTime;
       logger.error('API Client', `PUT ${path} falhou`, error);
-      
+
       if (error instanceof TypeError && error.message.includes('fetch')) {
         const errorMsg = 'Não foi possível conectar ao servidor. Verifique se o API Gateway está acessível';
         logger.error('API Client', errorMsg, { url, duration: `${duration}ms` });
@@ -232,14 +239,14 @@ class ApiClient {
   async patch<T>(path: string, data?: any, config?: ApiConfig): Promise<T> {
     const url = this.buildURL(path, config?.params);
     const startTime = Date.now();
-    
-    logger.info('API Client', `PATCH ${path}`, { 
+
+    logger.info('API Client', `PATCH ${path}`, {
       url: url.replace(this.token || '', '***'),
       hasToken: !!this.token,
       hasData: !!data,
-      params: config?.params 
+      params: config?.params
     });
-    
+
     try {
       const response = await fetch(url, {
         method: 'PATCH',
@@ -248,7 +255,7 @@ class ApiClient {
       });
 
       const duration = Date.now() - startTime;
-      logger.success('API Client', `PATCH ${path} - ${response.status}`, { 
+      logger.success('API Client', `PATCH ${path} - ${response.status}`, {
         duration: `${duration}ms`,
         status: response.status
       });
@@ -257,7 +264,7 @@ class ApiClient {
     } catch (error) {
       const duration = Date.now() - startTime;
       logger.error('API Client', `PATCH ${path} falhou`, error);
-      
+
       if (error instanceof TypeError && error.message.includes('fetch')) {
         const errorMsg = 'Não foi possível conectar ao servidor. Verifique se o API Gateway está acessível';
         logger.error('API Client', errorMsg, { url, duration: `${duration}ms` });
@@ -270,13 +277,13 @@ class ApiClient {
   async delete<T>(path: string, config?: ApiConfig): Promise<T> {
     const url = this.buildURL(path, config?.params);
     const startTime = Date.now();
-    
-    logger.info('API Client', `DELETE ${path}`, { 
+
+    logger.info('API Client', `DELETE ${path}`, {
       url: url.replace(this.token || '', '***'),
       hasToken: !!this.token,
-      params: config?.params 
+      params: config?.params
     });
-    
+
     try {
       const response = await fetch(url, {
         method: 'DELETE',
@@ -284,7 +291,7 @@ class ApiClient {
       });
 
       const duration = Date.now() - startTime;
-      logger.success('API Client', `DELETE ${path} - ${response.status}`, { 
+      logger.success('API Client', `DELETE ${path} - ${response.status}`, {
         duration: `${duration}ms`,
         status: response.status
       });
@@ -293,7 +300,7 @@ class ApiClient {
     } catch (error) {
       const duration = Date.now() - startTime;
       logger.error('API Client', `DELETE ${path} falhou`, error);
-      
+
       if (error instanceof TypeError && error.message.includes('fetch')) {
         const errorMsg = 'Não foi possível conectar ao servidor. Verifique se o API Gateway está acessível';
         logger.error('API Client', errorMsg, { url, duration: `${duration}ms` });
@@ -309,18 +316,18 @@ class ApiClient {
 
     if (!response.ok) {
       let errorMessage = `HTTP Error: ${response.status}`;
-      
+
       logger.warn('API Client', `Resposta com erro: ${response.status} ${response.statusText}`, {
         status: response.status,
         statusText: response.statusText,
         contentType
       });
-      
+
       if (isJson) {
         try {
           const errorData = await response.json();
           logger.debug('API Client', 'Dados do erro recebidos', errorData);
-          
+
           // Tratar diferentes formatos de erro do backend
           if (errorData.message) {
             errorMessage = errorData.message;
@@ -361,12 +368,12 @@ class ApiClient {
 
     if (isJson) {
       const data = await response.json();
-      logger.debug('API Client', 'Resposta JSON recebida', { 
+      logger.debug('API Client', 'Resposta JSON recebida', {
         hasData: !!data,
         keys: data ? Object.keys(data) : [],
         isWrapped: data && typeof data === 'object' && 'data' in data
       });
-      
+
       // Handle ApiResponse wrapper from backend
       // Backend returns: {success: true, message: "...", data: [...], timestamp: "..."}
       if (data && typeof data === 'object' && 'data' in data) {

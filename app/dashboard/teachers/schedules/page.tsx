@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { teacherService } from '@/services/teacher.service';
 import { Teacher } from '@/types/teacher.types';
@@ -26,7 +26,7 @@ const dayLabels: Record<string, string> = {
     SATURDAY: 'Sábado',
 };
 
-export default function TeacherSchedulesPage() {
+function TeacherSchedulesContent() {
     const searchParams = useSearchParams();
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
@@ -274,5 +274,20 @@ export default function TeacherSchedulesPage() {
                 </Card>
             )}
         </div>
+    );
+}
+
+export default function TeacherSchedulesPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center py-12">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                    <p className="mt-4 text-muted-foreground">Carregando...</p>
+                </div>
+            </div>
+        }>
+            <TeacherSchedulesContent />
+        </Suspense>
     );
 }
