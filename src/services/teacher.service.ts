@@ -17,8 +17,8 @@ import type {
 import type { ApiResponse } from '@/types/auth.types';
 
 export class TeacherService {
-  private basePath = '/api/v1/teachers';
-  private managementPath = '/api/v1/teacher-management';
+  private basePath = process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || '/api/teachers';
+  private managementPath = process.env.NEXT_PUBLIC_TEACHER_MANAGEMENT_SERVICE_URL || '/api/v1/teacher-management';
 
   // ==================== Basic CRUD Operations ====================
 
@@ -56,7 +56,7 @@ export class TeacherService {
       email: data.email,
       employeeId: data.employeeId
     });
-    
+
     try {
       const teacher = await apiClient.post<Teacher>(this.basePath, data);
       logger.success('Teacher Service', `✅ Professor criado com sucesso: ${teacher.fullName}`, {
@@ -78,7 +78,7 @@ export class TeacherService {
       fullName: data.fullName,
       email: data.email
     });
-    
+
     try {
       const teacher = await apiClient.put<Teacher>(`${this.basePath}/${id}`, data);
       logger.success('Teacher Service', `✅ Professor atualizado com sucesso: ${teacher.fullName}`, {
@@ -96,7 +96,7 @@ export class TeacherService {
    */
   async delete(id: number): Promise<ApiResponse> {
     logger.info('Teacher Service', `Tentando deletar professor ID: ${id}`);
-    
+
     try {
       const response = await apiClient.delete<ApiResponse>(`${this.basePath}/${id}`);
       logger.success('Teacher Service', `✅ Professor deletado com sucesso ID: ${id}`);

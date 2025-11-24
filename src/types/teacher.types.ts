@@ -5,6 +5,8 @@ export type TeacherStatus = 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE';
 export interface Teacher {
   id: number;
   name: string;
+  fullName?: string; // Added to support service usage
+  email: string;     // Added to support service usage
   employeeId: string;
   qualification: string;
   contact: string;
@@ -17,6 +19,8 @@ export interface Teacher {
 
 export interface CreateTeacherRequest {
   name: string;
+  fullName?: string; // Added to support service usage
+  email: string;     // Added to support service usage
   employeeId: string;
   qualification: string;
   contact: string;
@@ -24,7 +28,7 @@ export interface CreateTeacherRequest {
   hireDate?: string;
 }
 
-export interface UpdateTeacherRequest extends CreateTeacherRequest {}
+export interface UpdateTeacherRequest extends CreateTeacherRequest { }
 
 export interface TeacherAssignment {
   id: number;
