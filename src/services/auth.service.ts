@@ -22,7 +22,7 @@ export class AuthService {
    */
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     logger.info('Auth Service', `Tentando fazer login para: ${credentials.email}`);
-    
+
     const response = await apiClient.post<unknown>(
       `${this.basePath}/login`,
       credentials
@@ -58,16 +58,25 @@ export class AuthService {
       throw new Error(message);
     }
 
+    // Store token and clear any stale cached user data
     apiClient.setToken(payload.token);
+    if (typeof window !== 'undefined') {
+      try {
+        window.sessionStorage.removeItem('currentUser');
+        window.localStorage.removeItem('currentUser');
+      } catch (e) {
+        logger.error('Auth Service', 'Erro ao limpar cache de usuário após login', e);
+      }
+    }
     logger.success('Auth Service', `✅ Login bem-sucedido para: ${credentials.email}`);
 
     const normalizedResponse: LoginResponse = isWrappedResponse
       ? (response as LoginResponse)
       : {
-          success: true,
-          message: 'Login realizado com sucesso',
-          data: payload,
-        };
+        success: true,
+        message: 'Login realizado com sucesso',
+        data: payload,
+      };
 
     return normalizedResponse;
   }
@@ -77,7 +86,7 @@ export class AuthService {
    */
   async register(data: RegisterRequest): Promise<RegisterResponse> {
     logger.info('Auth Service', `Tentando registrar novo usuário: ${data.email}`);
-    
+
     const response = await apiClient.post<unknown>(
       `${this.basePath}/register`,
       data
@@ -123,10 +132,10 @@ export class AuthService {
     const normalizedResponse: RegisterResponse = isWrappedResponse
       ? (response as RegisterResponse)
       : {
-          success: true,
-          message: 'Registro realizado com sucesso',
-          data: normalizedPayload,
-        };
+        success: true,
+        message: 'Registro realizado com sucesso',
+        data: normalizedPayload,
+      };
 
     return normalizedResponse;
   }
@@ -155,7 +164,7 @@ export class AuthService {
    */
   async getCurrentUser(): Promise<User> {
     logger.debug('Auth Service', 'Buscando dados do usuário atual');
-    
+
     const token = apiClient.getToken();
     if (!token) {
       logger.error('Auth Service', '❌ Token de autenticação não encontrado');
