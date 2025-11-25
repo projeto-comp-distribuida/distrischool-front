@@ -5,15 +5,7 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import {
-  BookOpen,
-  Users,
-  GraduationCap,
-  LogOut,
-  RefreshCw,
-  NotebookPen,
-  ClipboardList,
-} from "lucide-react"
+import { BookOpen, Users, GraduationCap, LogOut, RefreshCw } from "lucide-react"
 import { NotificationCenter } from "@/components/notification-center"
 
 export default function DashboardPage() {
@@ -37,8 +29,8 @@ export default function DashboardPage() {
   const handleDebugInfo = () => {
     console.log('=== DEBUG INFO ===')
     console.log('User from context:', user)
-    console.log('sessionStorage currentUser:', sessionStorage.getItem('currentUser'))
-    console.log('sessionStorage authToken:', sessionStorage.getItem('authToken'))
+    console.log('localStorage currentUser:', localStorage.getItem('currentUser'))
+    console.log('localStorage authToken:', localStorage.getItem('authToken'))
     console.log('==================')
   }
 
@@ -103,7 +95,7 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Students Card */}
           {(userRole === 'ADMIN' || userRole === 'TEACHER') && (
             <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/students')}>
@@ -118,31 +110,6 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <Button className="w-full">Acessar</Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Classes Card */}
-          {(userRole === 'ADMIN' || userRole === 'TEACHER' || userRole === 'STUDENT') && (
-            <Card
-              className="hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => router.push('/dashboard/classes')}
-            >
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <NotebookPen className="h-8 w-8 text-primary" />
-                  <CardTitle className="text-2xl">Turmas</CardTitle>
-                </div>
-                <CardDescription>
-                  {userRole === 'STUDENT'
-                    ? 'Visualize seu cronograma e professores responsáveis'
-                    : 'Organize cronogramas, participantes e próximos encontros'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full" variant={userRole === 'STUDENT' ? 'outline' : 'default'}>
-                  {userRole === 'STUDENT' ? 'Ver turmas' : 'Gerenciar'}
-                </Button>
               </CardContent>
             </Card>
           )}
@@ -164,29 +131,6 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           )}
-
-          {/* Grades Card */}
-          <Card
-            className="hover:shadow-lg transition-shadow cursor-pointer"
-            onClick={() => router.push('/dashboard/grades')}
-          >
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <ClipboardList className="h-8 w-8 text-primary" />
-                <CardTitle className="text-2xl">Notas</CardTitle>
-              </div>
-              <CardDescription>
-                {userRole === 'STUDENT'
-                  ? 'Consulte suas avaliações e feedbacks dos professores'
-                  : 'Acompanhe e edite notas para cada avaliação'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button className="w-full">
-                {userRole === 'STUDENT' ? 'Ver minhas notas' : 'Abrir gerenciamento'}
-              </Button>
-            </CardContent>
-          </Card>
 
           {/* My Profile Card */}
           <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/profile')}>

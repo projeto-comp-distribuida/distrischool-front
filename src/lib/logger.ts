@@ -13,14 +13,25 @@ interface LogEntry {
 
 class Logger {
   private isDevelopment = process.env.NODE_ENV === 'development';
+  private isBrowser = typeof window !== 'undefined';
 
   private formatTimestamp(date: Date): string {
-    return date.toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      fractionalSecondDigits: 3,
-    });
+    try {
+      // Tentar formato completo com milissegundos
+      return date.toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        fractionalSecondDigits: 3,
+      } as any);
+    } catch (e) {
+      // Fallback para formato simples sem milissegundos
+      return date.toLocaleTimeString('pt-BR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      });
+    }
   }
 
   private getColorCode(level: LogLevel): string {
@@ -48,7 +59,6 @@ class Logger {
     }
 
     const timestamp = this.formatTimestamp(new Date());
-    const color = this.getColorCode(level);
     const categoryFormatted = `[${category}]`.padEnd(20);
     const levelFormatted = level.padEnd(8);
 
@@ -60,17 +70,51 @@ class Logger {
       timestamp: new Date(),
     };
 
-    // Formatar mensagem principal
-    let logMessage = `${color}${this.bold}${levelFormatted}${this.resetColor} `;
-    logMessage += `${color}${timestamp}${this.resetColor} `;
-    logMessage += `${this.bold}${categoryFormatted}${this.resetColor} `;
-    logMessage += `${message}`;
-
-    // Log no console
-    if (data) {
-      console.log(logMessage);
+    // Se estamos no browser, usar console.log simples sem cores ANSI
+    if (this.isBrowser) {
+      const logMessage = `${levelFormatted} ${timestamp} ${categoryFormatted} ${message}`;
+      
+      // Usar métodos de console apropriados
+      switch (level) {
+        case 'ERROR':
+          console.error(logMessage);
+          if (data) {
+            console.dir(data);
+          }
+          break;
+        case 'WARN':
+          console.warn(logMessage);
+          if (data) {
+            console.dir(data);
+          }
+          break;
+        case 'DEBUG':
+          console.debug(logMessage);
+          if (data) {
+            console.dir(data);
+          }
+          break;
+        default:
+          console.log(logMessage);
+          if (data) {
+            console.dir(data);
+          }
+      }
     } else {
-      console.log(logMessage);
+      // No servidor (Node.js), usar cores ANSI
+      const color = this.getColorCode(level);
+      let logMessage = `${color}${this.bold}${levelFormatted}${this.resetColor} `;
+      logMessage += `${color}${timestamp}${this.resetColor} `;
+      logMessage += `${this.bold}${categoryFormatted}${this.resetColor} `;
+      logMessage += `${message}`;
+
+      // Log no console
+      if (data) {
+        console.log(logMessage);
+        console.log('📦 Dados:', data);
+      } else {
+        console.log(logMessage);
+      }
     }
   }
 
