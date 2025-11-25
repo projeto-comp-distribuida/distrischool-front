@@ -39,7 +39,7 @@ export default function CreateCoursePage() {
             code: '',
             workloadHours: 0,
             description: '',
-            academicCenterId: 1, // Default value for now
+            academicCenterId: 0, // Must be provided by user
         },
     });
 
@@ -120,6 +120,25 @@ export default function CreateCoursePage() {
                                         <FormLabel>Descrição</FormLabel>
                                         <FormControl>
                                             <Textarea placeholder="Descrição do curso..." {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="academicCenterId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Centro Acadêmico ID</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                type="number" 
+                                                placeholder="Ex: 1" 
+                                                {...field}
+                                                onChange={(e) => field.onChange(Number(e.target.value))}
+                                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

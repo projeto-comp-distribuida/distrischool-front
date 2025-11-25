@@ -43,7 +43,7 @@ export default function CreateClassPage() {
             academicYear: new Date().getFullYear().toString(),
             period: '1',
             capacity: 30,
-            shiftId: 1,
+            shiftId: 0, // Must be provided by user
             room: '',
             startDate: '',
             endDate: '',
@@ -133,18 +133,37 @@ export default function CreateClassPage() {
 
                                 <FormField
                                     control={form.control}
-                                    name="room"
+                                    name="shiftId"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Sala</FormLabel>
+                                            <FormLabel>Turno ID</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="Sala 101" {...field} />
+                                                <Input 
+                                                    type="number" 
+                                                    placeholder="Ex: 1" 
+                                                    {...field}
+                                                    onChange={(e) => field.onChange(Number(e.target.value))}
+                                                />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )}
                                 />
                             </div>
+
+                            <FormField
+                                control={form.control}
+                                name="room"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Sala</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Sala 101" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
 
                             <div className="grid grid-cols-2 gap-4">
                                 <FormField

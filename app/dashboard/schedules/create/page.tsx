@@ -86,6 +86,14 @@ export default function CreateSchedulePage() {
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setLoading(true);
         try {
+            // Get the selected class to retrieve its shiftId
+            const selectedClass = classes.find(c => c.id.toString() === values.classId);
+            if (!selectedClass) {
+                toast.error('Turma selecionada não encontrada');
+                setLoading(false);
+                return;
+            }
+
             await scheduleService.create({
                 classEntity: { id: parseInt(values.classId) },
                 subject: { id: parseInt(values.subjectId) },
@@ -94,7 +102,7 @@ export default function CreateSchedulePage() {
                 startTime: values.startTime,
                 endTime: values.endTime,
                 room: values.room,
-                shift: { id: 1 }, // Default shift for now, ideally should come from class or selection
+                shift: { id: selectedClass.shiftId },
                 active: true,
             });
             toast.success('Horário criado com sucesso!');

@@ -65,73 +65,29 @@ export default function AttendancePage() {
             const classDetails = await classService.getById(schedule.classEntity.id);
 
             if (classDetails.studentIds && classDetails.studentIds.length > 0) {
-                // If we have IDs, we might need to fetch details for each (inefficient) or use a bulk endpoint.
-                // Since we don't have a bulk endpoint visible, let's try a workaround or assume the backend 
-                // should provide this via a specific endpoint like /classes/{id}/students
-                // Since that's not in the service, let's try to use the studentService to search/filter if possible,
-                // or just fail gracefully for now if we can't get real students easily without backend changes.
-
-                // WAIT, I see `attendanceService.getStudentAttendance` but that's for a specific student.
-                // Let's assume for this fix we will try to fetch class details. 
-                // If the backend `class-service` returns students in the `getById` payload (as objects), we are good.
-                // If it returns IDs, we are stuck without a bulk fetch.
-
-                // Let's assume for now we can't easily get the list without a proper endpoint.
-                // I will add a TODO and keep the mock for safety IF we can't get data, 
-                // BUT the user asked to FIX it.
-
-                // Let's try to use `studentService.getAll` and filter client side (terrible for perf but works for small data)
-                // or check if there is a better way.
-
-                // Actually, let's look at `classService` again.
-                // It has `addStudents`.
-
-                // Let's try to fetch all students and filter by those who might belong to the class? 
-                // No, that's guessing.
-
-                // Let's implement a best-effort approach:
-                // 1. Fetch class details.
-                // 2. If it has a list of students (objects), use it.
-                // 3. If not, show a message "Nenhum aluno vinculado à turma".
-
-                // For the purpose of this task, I will mock the fetch with a comment explaining 
-                // that the backend endpoint for "Get Students by Class" is missing in the service definition 
-                // and I'll simulate it or use a placeholder if the class entity doesn't have it.
-
-                // HOWEVER, looking at `studentService`, we have `getByCourse`. 
-                // Maybe we can use that if the class is linked to a course?
-                // The class has `code` and `name`.
-
-                // Let's try to fetch all students for now (assuming small scale) and filter? No.
-
-                // Let's just try to see if `classDetails` has a `students` property that wasn't typed?
-                // Or just show empty list if no students found.
-
-                // REVISION: I will use `studentService.getAll()` to populate the list for now 
-                // so at least we see REAL students from the DB, even if they aren't filtered by class correctly yet 
-                // (better than hardcoded mocks).
-
-                const allStudentsResponse = await import('@/services/student.service').then(m => m.studentService.getAll({ size: 100 }));
-                const allStudents = (allStudentsResponse as any).content || [];
-                setStudents(allStudents);
+                // Fetch student details for each student ID in the class
+                const studentPromises = classDetails.studentIds.map(id => 
+                    studentService.getById(id).catch(error => {
+                        console.error(`Failed to fetch student ${id}:`, error);
+                        return null;
+                    })
+                );
+                
+                const studentResults = await Promise.all(studentPromises);
+                const validStudents = studentResults.filter((s): s is Student => s !== null);
+                
+                setStudents(validStudents);
 
                 // Initialize attendance
                 const initialAttendance: Record<number, boolean> = {};
-                allStudents.forEach((s: Student) => {
+                validStudents.forEach((s: Student) => {
                     initialAttendance[s.id] = false;
                 });
                 setAttendance(initialAttendance);
             } else {
-                // Fallback to fetching all students to show SOMETHING real
-                const allStudentsResponse = await import('@/services/student.service').then(m => m.studentService.getAll({ size: 100 }));
-                const allStudents = (allStudentsResponse as any).content || [];
-                setStudents(allStudents);
-
-                const initialAttendance: Record<number, boolean> = {};
-                allStudents.forEach((s: Student) => {
-                    initialAttendance[s.id] = false;
-                });
-                setAttendance(initialAttendance);
+                // No students in class
+                setStudents([]);
+                setAttendance({});
             }
 
         } catch (error) {

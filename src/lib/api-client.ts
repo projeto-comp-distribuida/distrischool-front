@@ -101,7 +101,15 @@ class ApiClient {
   }
 
   private buildURL(path: string, params?: Record<string, any>): string {
-    const url = new URL(`${this.baseURL}${path}`);
+    const isAbsolute = /^https?:\/\//i.test(path);
+    const normalizedBase = this.baseURL.endsWith('/')
+      ? this.baseURL
+      : `${this.baseURL}/`;
+    const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+
+    const url = isAbsolute
+      ? new URL(path)
+      : new URL(normalizedPath, normalizedBase);
     
     if (params) {
       Object.keys(params).forEach(key => {
