@@ -4,6 +4,11 @@ import { useEffect, useMemo, useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { ProtectedRoute } from "@/components/protected-route"
 import type { UserRole } from "@/types/auth.types"
+import { gradeService } from "@/services/grade.service"
+import { studentService } from "@/services/student.service"
+import { subjectService } from "@/services/subject.service"
+import { Grade, GradeStatus } from "@/types/grade.types"
+import { toast } from "sonner"
 import {
   Card,
   CardContent,
@@ -37,9 +42,8 @@ import {
   GraduationCap,
   Lock,
   Save,
+  Loader2,
 } from "lucide-react"
-
-type GradeStatus = "Aprovado" | "Em recuperação" | "Requer atenção"
 
 type GradeRecord = {
   id: string
@@ -53,6 +57,13 @@ type GradeRecord = {
   lastUpdated: string
 }
 
+// Helper function to calculate status from grade
+const calculateStatus = (grade: number): GradeStatus => {
+  if (grade >= 7.0) return "Aprovado"
+  if (grade >= 5.0) return "Em recuperação"
+  return "Requer atenção"
+}
+
 const statusStyles: Record<GradeStatus, string> = {
   Aprovado: "bg-emerald-100 text-emerald-700",
   "Em recuperação": "bg-amber-100 text-amber-700",
@@ -63,72 +74,91 @@ function GradesPageContent() {
   const { user } = useAuth()
 
   const [grades, setGrades] = useState<GradeRecord[]>([])
+  const [loading, setLoading] = useState(true)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editingRecord, setEditingRecord] = useState<GradeRecord | null>(null)
   const [editGradeValue, setEditGradeValue] = useState<string>("")
   const [editFeedbackValue, setEditFeedbackValue] = useState<string>("")
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     if (!user) return
+    loadGrades()
+  }, [user])
 
-    const currentUserId = String(user.id ?? "current")
-    const currentUserName = `${user.firstName} ${user.lastName}`.trim() || "Estudante logado"
+  const loadGrades = async () => {
+    if (!user) return
 
-    setGrades((existing) => {
-      if (existing.length > 0) {
-        return existing
+    setLoading(true)
+    try {
+      const primaryRole = (user.roles?.[0] ?? "STUDENT") as UserRole
+      const isStudent = primaryRole === "STUDENT"
+      
+      // Fetch grades based on role
+      let gradesResponse
+      if (isStudent && user.id) {
+        gradesResponse = await gradeService.getByStudent(Number(user.id), { size: 100 })
+      } else {
+        gradesResponse = await gradeService.getAll({ size: 100 })
       }
 
-      const seed: GradeRecord[] = [
-        {
-          id: "grade-current",
-          studentId: currentUserId,
-          studentName: currentUserName,
-          subject: "Matemática Aplicada",
-          assessment: "Prova bimestral 02",
-          grade: 8.6,
-          status: "Aprovado",
-          feedback: "Excelente domínio dos conceitos de derivadas e funções.",
-          lastUpdated: "05/11/2025 10:32",
-        },
-        {
-          id: "grade-102",
-          studentId: "STU-102",
-          studentName: "Bruna Oliveira",
-          subject: "Matemática Aplicada",
-          assessment: "Prova bimestral 02",
-          grade: 7.1,
-          status: "Em recuperação",
-          feedback: "Recomendar revisão dos tópicos de limites para a reavaliação.",
-          lastUpdated: "04/11/2025 18:45",
-        },
-        {
-          id: "grade-204",
-          studentId: "STU-204",
-          studentName: "Carlos Mendes",
-          subject: "Laboratório de Projetos",
-          assessment: "Entrega sprint 03",
-          grade: 6.4,
-          status: "Requer atenção",
-          feedback: "Projeto atrasado; necessário plano de recuperação das entregas.",
-          lastUpdated: "03/11/2025 21:10",
-        },
-        {
-          id: "grade-305",
-          studentId: "STU-305",
-          studentName: "Daniela Brito",
-          subject: "História Contemporânea",
-          assessment: "Trabalho temático",
-          grade: 9.2,
-          status: "Aprovado",
-          feedback: "Excelente construção de argumentos e pesquisa de fontes.",
-          lastUpdated: "01/11/2025 09:15",
-        },
-      ]
+      const gradesData = gradesResponse.content || []
+      
+      // Fetch student and subject names if not included in grade response
+      const gradeRecords: GradeRecord[] = await Promise.all(
+        gradesData.map(async (grade: Grade) => {
+          let studentName = grade.studentName
+          let subjectName = grade.subjectName
 
-      return seed
-    })
-  }, [user])
+          // Fetch student name if not provided
+          if (!studentName && grade.studentId) {
+            try {
+              const student = await studentService.getById(grade.studentId)
+              studentName = student.fullName
+            } catch (error) {
+              console.error(`Failed to fetch student ${grade.studentId}:`, error)
+              studentName = `Estudante ${grade.studentId}`
+            }
+          }
+
+          // Fetch subject name if not provided
+          if (!subjectName && grade.subjectId) {
+            try {
+              const subject = await subjectService.getById(grade.subjectId)
+              subjectName = subject.name
+            } catch (error) {
+              console.error(`Failed to fetch subject ${grade.subjectId}:`, error)
+              subjectName = `Disciplina ${grade.subjectId}`
+            }
+          }
+
+          return {
+            id: String(grade.id),
+            studentId: String(grade.studentId),
+            studentName: studentName || `Estudante ${grade.studentId}`,
+            subject: subjectName || `Disciplina ${grade.subjectId}`,
+            assessment: grade.assessment,
+            grade: grade.grade,
+            status: grade.status || calculateStatus(grade.grade),
+            feedback: grade.feedback || "",
+            lastUpdated: grade.updatedAt 
+              ? new Date(grade.updatedAt).toLocaleString("pt-BR")
+              : grade.createdAt 
+                ? new Date(grade.createdAt).toLocaleString("pt-BR")
+                : new Date().toLocaleString("pt-BR"),
+          }
+        })
+      )
+
+      setGrades(gradeRecords)
+    } catch (error) {
+      console.error("Failed to load grades:", error)
+      toast.error("Erro ao carregar notas")
+      setGrades([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   if (!user) {
     return null
@@ -169,29 +199,35 @@ function GradesPageContent() {
     setIsEditDialogOpen(true)
   }
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingRecord) return
 
     const parsedGrade = Number(editGradeValue.replace(",", "."))
     if (Number.isNaN(parsedGrade) || parsedGrade < 0 || parsedGrade > 10) {
-      alert("Informe uma nota entre 0 e 10.")
+      toast.error("Informe uma nota entre 0 e 10.")
       return
     }
 
-    setGrades((existing) =>
-      existing.map((item) =>
-        item.id === editingRecord.id
-          ? {
-              ...item,
-              grade: Number(parsedGrade.toFixed(1)),
-              feedback: editFeedbackValue,
-              lastUpdated: new Date().toLocaleString("pt-BR"),
-            }
-          : item,
-      ),
-    )
-    setIsEditDialogOpen(false)
-    setEditingRecord(null)
+    setSaving(true)
+    try {
+      const gradeId = Number(editingRecord.id)
+      await gradeService.update(gradeId, {
+        grade: parsedGrade,
+        feedback: editFeedbackValue,
+      })
+
+      // Reload grades to get updated data
+      await loadGrades()
+      
+      toast.success("Nota atualizada com sucesso!")
+      setIsEditDialogOpen(false)
+      setEditingRecord(null)
+    } catch (error) {
+      console.error("Failed to update grade:", error)
+      toast.error("Erro ao atualizar nota")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -207,7 +243,7 @@ function GradesPageContent() {
           {canEdit ? (
             <Button className="gap-2" variant="default" disabled>
               <FileSpreadsheet className="h-4 w-4" />
-              Importar planilha (mock)
+              Importar planilha
             </Button>
           ) : (
             <div className="flex items-center gap-2 rounded-md border border-dashed bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
@@ -257,12 +293,12 @@ function GradesPageContent() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-semibold">
-                {isStudent ? "Somente leitura" : "Edição mock"}
+                {isStudent ? "Somente leitura" : "Edição habilitada"}
               </div>
               <p className="text-xs text-muted-foreground">
                 {isStudent
                   ? "Entre em contato com a coordenação para dúvidas."
-                  : "Alterações fictícias para validar o fluxo."}
+                  : "Você pode editar notas e feedbacks."}
               </p>
             </CardContent>
           </Card>
@@ -274,11 +310,15 @@ function GradesPageContent() {
             <CardDescription>
               {isStudent
                 ? "Visualize suas avaliações registradas. A edição não está disponível para estudantes."
-                : "Clique em editar para simular alterações na nota e feedback da avaliação."}
+                : "Clique em editar para alterar a nota e feedback da avaliação."}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {viewableGrades.length === 0 ? (
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : viewableGrades.length === 0 ? (
               <div className="rounded-md border border-dashed bg-muted/40 p-10 text-center">
                 <p className="text-sm text-muted-foreground">
                   Nenhuma avaliação disponível para o seu perfil neste momento.
@@ -342,9 +382,9 @@ function GradesPageContent() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar nota (mock)</DialogTitle>
+            <DialogTitle>Editar nota</DialogTitle>
             <DialogDescription>
-              Ajuste a nota e o feedback para simular o fluxo de edição. Nenhum dado real será salvo.
+              Ajuste a nota e o feedback da avaliação. As alterações serão salvas no sistema.
             </DialogDescription>
           </DialogHeader>
           {editingRecord ? (
@@ -391,12 +431,21 @@ function GradesPageContent() {
             </p>
           )}
           <DialogFooter className="pt-4">
-            <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={saving}>
               Cancelar
             </Button>
-            <Button type="button" onClick={handleSaveEdit}>
-              <Save className="mr-2 h-4 w-4" />
-              Salvar mock
+            <Button type="button" onClick={handleSaveEdit} disabled={saving}>
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Salvar
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

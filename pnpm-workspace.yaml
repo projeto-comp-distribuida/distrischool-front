@@ -1,0 +1,6 @@
+ignoredBuiltDependencies:
+  - browser-tabs-lock
+  - sharp
+
+onlyBuiltDependencies:
+  - '@tailwindcss/oxide'

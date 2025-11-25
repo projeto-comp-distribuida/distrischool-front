@@ -1,51 +1,94 @@
 // Notification Service - Integração com REST API e WebSocket
 import { apiClient } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
-import type { Notification, WebSocketMessage } from '@/types/notification.types';
+import type { Notification } from '@/types/notification.types';
+import { websocketClient, type WebSocketMessage } from '@/lib/websocket-client';
 
-// Importar WebSocket dinamicamente apenas no cliente
+// Obter WebSocket client apenas no cliente (browser)
 const getWebSocketClient = () => {
   if (typeof window === 'undefined') {
     return null;
   }
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { websocketClient } = require('@/lib/websocket-client');
   return websocketClient;
 };
 
 class NotificationService {
-  private basePath = '/api/v1/notifications';
+  private basePath = process.env.NEXT_PUBLIC_NOTIFICATION_SERVICE_URL || '/api/v1/notifications';
   private wsConnected = false;
 
   /**
    * Busca notificações via REST API
    */
   async getNotifications(): Promise<Notification[]> {
-    logger.info('Notification Service', `Buscando notificações via REST: GET ${this.basePath}`);
-    
+    logger.info('Notification Service', `Buscando notifica\u00e7\u00f5es via REST: GET ${this.basePath}`);
+
+    // Primeiro, tentar rota interna do Next.js (/api/notifications) — útil para desenvolvimento e quando
+    // a rota server-side fornece mock/polling de eventos (app/api/notifications/route.ts).
     try {
+      if (typeof window !== 'undefined') {
+        try {
+          const localStart = Date.now();
+          const res = await fetch('/api/notifications', { method: 'GET', headers: { 'Content-Type': 'application/json' } });
+          const localDuration = Date.now() - localStart;
+
+          if (res.ok) {
+            const json = await res.json();
+            logger.success('Notification Service', 'Notifica\u00e7\u00f5es recebidas via rota interna', {
+              duration: `${localDuration}ms`,
+              status: res.status
+            });
+
+            // Se o servidor retornar o envelope { success, data }
+            if (json && typeof json === 'object' && 'data' in json) {
+              const notifications = json.data as Notification[];
+              if (notifications && Array.isArray(notifications)) {
+                logger.debug('Notification Service', 'Detalhes das notifica\u00e7\u00f5es (rota interna)', {
+                  total: notifications.length,
+                  unread: notifications.filter(n => !n.read).length,
+                  types: notifications.map(n => n.type)
+                });
+                return notifications;
+              }
+            }
+
+            // Se a rota retornar diretamente o array
+            if (Array.isArray(json)) {
+              return json as Notification[];
+            }
+
+            // Caso a rota interna retorne algo inesperado, continuar para o fallback
+            logger.warn('Notification Service', 'Resposta inesperada da rota interna de notificacoes', { json });
+          } else {
+            logger.debug('Notification Service', `Rota interna /api/notifications retornou status ${res.status}`);
+          }
+        } catch (err) {
+          logger.debug('Notification Service', 'Falha ao acessar rota interna /api/notifications — fallback para gateway', err);
+        }
+      }
+
+      // Fallback: chamar o API Gateway/backend (ex: /api/v1/notifications)
       const startTime = Date.now();
       const notifications = await apiClient.get<Notification[]>(this.basePath);
       const duration = Date.now() - startTime;
-      
-      logger.success('Notification Service', `Notificações recebidas via REST`, {
+
+      logger.success('Notification Service', 'Notifica\u00e7\u00f5es recebidas via REST', {
         count: notifications?.length || 0,
         duration: `${duration}ms`
       });
-      
+
       if (notifications && Array.isArray(notifications)) {
-        logger.debug('Notification Service', 'Detalhes das notificações', {
+        logger.debug('Notification Service', 'Detalhes das notifica\u00e7\u00f5es', {
           total: notifications.length,
           unread: notifications.filter(n => !n.read).length,
           types: notifications.map(n => n.type)
         });
         return notifications;
       }
-      
-      logger.warn('Notification Service', 'Resposta inválida do servidor', { notifications });
+
+      logger.warn('Notification Service', 'Resposta inv\u00e1lida do servidor', { notifications });
       return [];
     } catch (error) {
-      logger.error('Notification Service', 'Erro ao buscar notificações via REST', error);
+      logger.error('Notification Service', 'Erro ao buscar notifica\u00e7\u00f5es via REST', error);
       return [];
     }
   }
@@ -55,14 +98,15 @@ class NotificationService {
    */
   connectWebSocket(token: string, onNotification: (notification: Notification) => void): void {
     const wsClient = getWebSocketClient();
-    
+
     // Verificar se está no cliente
     if (!wsClient) {
       logger.warn('Notification Service', 'WebSocket não disponível no servidor');
       return;
     }
 
-    if (this.wsConnected) {
+    // Evitar conexões duplicadas
+    if (wsClient.isConnected()) {
       logger.warn('Notification Service', 'WebSocket já está conectado');
       return;
     }
@@ -73,7 +117,7 @@ class NotificationService {
     }
 
     logger.info('Notification Service', 'Conectando ao WebSocket para notificações em tempo real...');
-    
+
     // Handler para mensagens recebidas
     const unsubscribeMessage = wsClient.onMessage((message: WebSocketMessage) => {
       logger.info('Notification Service', '📨 Mensagem WebSocket recebida', {
@@ -89,7 +133,7 @@ class NotificationService {
             type: notification.type,
             title: notification.title
           });
-          
+
           onNotification(notification);
         } catch (error) {
           logger.error('Notification Service', 'Erro ao processar notificação do WebSocket', error);
@@ -104,10 +148,10 @@ class NotificationService {
     });
 
     // Handler para mudanças de status
-    const unsubscribeStatus = wsClient.onStatusChange((status) => {
+    const unsubscribeStatus = wsClient.onStatusChange((status: 'disconnected' | 'connecting' | 'connected' | 'error') => {
       logger.info('Notification Service', `Status WebSocket alterado: ${status}`);
       this.wsConnected = status === 'connected';
-      
+
       if (status === 'connected') {
         logger.success('Notification Service', '✅ WebSocket conectado com sucesso!');
       } else if (status === 'disconnected') {
@@ -118,7 +162,7 @@ class NotificationService {
     });
 
     // Handler para erros
-    const unsubscribeError = wsClient.onError((error) => {
+    const unsubscribeError = wsClient.onError((error: Error) => {
       logger.error('Notification Service', 'Erro no WebSocket', error);
     });
 
@@ -138,7 +182,7 @@ class NotificationService {
    */
   disconnectWebSocket(): void {
     const wsClient = getWebSocketClient();
-    
+
     // Verificar se está no cliente
     if (!wsClient) {
       return;
@@ -155,11 +199,13 @@ class NotificationService {
 
     // Limpar handlers se existirem
     if ((this as any).unsubscribeHandlers) {
-      (this as any).unsubscribeHandlers.forEach((unsubscribe: () => void) => {
-        try {
-          unsubscribe();
-        } catch (error) {
-          logger.error('Notification Service', 'Erro ao remover handler', error);
+      (this as any).unsubscribeHandlers.forEach((unsubscribe: (() => void) | undefined) => {
+        if (unsubscribe) {
+          try {
+            unsubscribe();
+          } catch (error) {
+            logger.error('Notification Service', 'Erro ao remover handler', error);
+          }
         }
       });
       (this as any).unsubscribeHandlers = [];
@@ -173,7 +219,7 @@ class NotificationService {
    */
   async markAsRead(notificationId: string): Promise<void> {
     logger.info('Notification Service', `Marcando notificação como lida: ${notificationId}`);
-    
+
     try {
       await apiClient.put(`${this.basePath}/${notificationId}/read`);
       logger.success('Notification Service', `✅ Notificação ${notificationId} marcada como lida`);
@@ -188,7 +234,7 @@ class NotificationService {
    */
   async markAllAsRead(): Promise<void> {
     logger.info('Notification Service', 'Marcando todas as notificações como lidas');
-    
+
     try {
       await apiClient.put(`${this.basePath}/read-all`);
       logger.success('Notification Service', '✅ Todas as notificações marcadas como lidas');
@@ -203,7 +249,7 @@ class NotificationService {
    */
   async deleteNotification(notificationId: string): Promise<void> {
     logger.info('Notification Service', `Deletando notificação: ${notificationId}`);
-    
+
     try {
       await apiClient.delete(`${this.basePath}/${notificationId}`);
       logger.success('Notification Service', `✅ Notificação ${notificationId} deletada`);
@@ -240,7 +286,7 @@ class NotificationService {
    */
   private parseNotification(data: any): Notification {
     logger.debug('Notification Service', 'Parseando notificação', { data });
-    
+
     // Se já é uma Notification válida, retornar
     if (data.id && data.type && data.title && data.message) {
       return data as Notification;
