@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/auth-context';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -19,6 +20,7 @@ import {
 } from '@/components/ui/form';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ArrowLeft } from 'lucide-react';
 
 const formSchema = z.object({
     name: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres'),
@@ -30,7 +32,23 @@ const formSchema = z.object({
 
 export default function CreateCoursePage() {
     const router = useRouter();
+    const { user } = useAuth();
     const [loading, setLoading] = useState(false);
+    
+    const isStudent = user?.roles?.includes('STUDENT');
+    
+    useEffect(() => {
+        // Redirecionar alunos que tentarem acessar esta página
+        if (isStudent) {
+            toast.error('Você não tem permissão para criar cursos');
+            router.push('/dashboard/courses');
+        }
+    }, [isStudent, router]);
+    
+    // Não renderizar nada se for aluno (será redirecionado)
+    if (isStudent) {
+        return null;
+    }
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -60,7 +78,15 @@ export default function CreateCoursePage() {
     }
 
     return (
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-2xl mx-auto p-6">
+            <Button
+                variant="ghost"
+                onClick={() => router.push('/dashboard/courses')}
+                className="mb-4"
+            >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Voltar
+            </Button>
             <Card>
                 <CardHeader>
                     <CardTitle>Criar Novo Curso</CardTitle>

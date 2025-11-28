@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { teacherService } from '@/services/teacher.service';
 import { Teacher } from '@/types/teacher.types';
 import { Schedule } from '@/types/schedule.types';
@@ -13,7 +13,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Calendar, Clock, MapPin, BookOpen } from 'lucide-react';
+import { Calendar, Clock, MapPin, BookOpen, ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 const daysOfWeek = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
@@ -28,6 +29,7 @@ const dayLabels: Record<string, string> = {
 
 function TeacherSchedulesContent() {
     const searchParams = useSearchParams();
+    const router = useRouter();
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [selectedTeacherId, setSelectedTeacherId] = useState<string>('');
     const [schedules, setSchedules] = useState<Schedule[]>([]);
@@ -126,7 +128,15 @@ function TeacherSchedulesContent() {
     }, 0);
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 p-6">
+            <Button
+                variant="ghost"
+                onClick={() => router.push('/dashboard/teachers')}
+                className="mb-4"
+            >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Voltar
+            </Button>
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">Horários do Professor</h1>
                 <p className="text-muted-foreground">

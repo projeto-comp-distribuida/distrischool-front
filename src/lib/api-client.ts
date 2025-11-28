@@ -9,15 +9,15 @@ declare const process: {
   };
 };
 
-// Using API Gateway
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://distrischool.ddns.net/api/v1';
+// Using API Gateway or direct Auth Service
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://192.168.1.7:8080';
 
 export interface ApiConfig {
   headers?: Record<string, string>;
   params?: Record<string, any>;
 }
 
-class ApiClient {
+export class ApiClient {
   private baseURL: string;
   private token: string | null = null;
   private unauthorizedHandlers = new Set<() => void>();
@@ -70,6 +70,19 @@ class ApiClient {
   }
 
   getToken(): string | null {
+    // Always check sessionStorage to ensure token synchronization across multiple ApiClient instances
+    if (typeof window !== 'undefined') {
+      try {
+        const sessionToken = window.sessionStorage.getItem('authToken');
+        if (sessionToken && sessionToken !== this.token) {
+          this.token = sessionToken;
+        } else if (!sessionToken && this.token) {
+          this.token = null;
+        }
+      } catch (error) {
+        // Ignore errors reading from sessionStorage
+      }
+    }
     return this.token;
   }
 
@@ -100,8 +113,21 @@ class ApiClient {
       ...customHeaders,
     };
 
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    // Always get the latest token from sessionStorage to ensure synchronization
+    const token = this.getToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+      logger.debug('API Client', 'Authorization header added', {
+        hasToken: true,
+        tokenLength: token.length,
+        tokenPrefix: token.substring(0, 20) + '...'
+      });
+    } else {
+      logger.warn('API Client', 'No token available for Authorization header', {
+        baseURL: this.baseURL,
+        hasSessionStorage: typeof window !== 'undefined',
+        tokenInStorage: typeof window !== 'undefined' ? !!window.sessionStorage.getItem('authToken') : false
+      });
     }
 
     return headers;

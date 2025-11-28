@@ -15,12 +15,6 @@ export default function LoginPage() {
           <p className="text-muted-foreground">Enter your credentials to access your account</p>
         </div>
         <LoginForm />
-        <p className="text-center text-sm text-muted-foreground mt-6">
-          {"Don't have an account? "}
-          <Link href="/register" className="text-foreground font-medium hover:underline">
-            Sign up
-          </Link>
-        </p>
       </div>
     </div>
   )

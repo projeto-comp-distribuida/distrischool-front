@@ -1,6 +1,6 @@
 // Student Management Service
 
-import { apiClient } from '@/lib/api-client';
+import { ApiClient } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
 import type {
   Student,
@@ -13,8 +13,12 @@ import type {
 } from '@/types/student.types';
 import type { ApiResponse } from '@/types/auth.types';
 
+// Use port 8081 for student management service
+const STUDENT_SERVICE_BASE_URL = process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || 'http://192.168.1.7:8081';
+const studentApiClient = new ApiClient(STUDENT_SERVICE_BASE_URL);
+
 export class StudentService {
-  private basePath = process.env.NEXT_PUBLIC_STUDENT_SERVICE_URL || '/api/v1/students';
+  private basePath = '/api/v1/students';
 
   /**
    * Get all students with pagination
@@ -25,14 +29,14 @@ export class StudentService {
     sortBy?: string;
     direction?: 'ASC' | 'DESC';
   }): Promise<PaginatedResponse<Student>> {
-    return apiClient.get<PaginatedResponse<Student>>(this.basePath, { params });
+    return studentApiClient.get<PaginatedResponse<Student>>(this.basePath, { params });
   }
 
   /**
    * Search students with filters
    */
   async search(params: StudentSearchParams): Promise<PaginatedResponse<Student>> {
-    return apiClient.get<PaginatedResponse<Student>>(
+    return studentApiClient.get<PaginatedResponse<Student>>(
       `${this.basePath}/search`,
       { params }
     );
@@ -42,14 +46,14 @@ export class StudentService {
    * Get student by ID
    */
   async getById(id: number): Promise<Student> {
-    return apiClient.get<Student>(`${this.basePath}/${id}`);
+    return studentApiClient.get<Student>(`${this.basePath}/${id}`);
   }
 
   /**
    * Get student by registration number
    */
   async getByRegistrationNumber(registrationNumber: string): Promise<Student> {
-    return apiClient.get<Student>(
+    return studentApiClient.get<Student>(
       `${this.basePath}/registration/${registrationNumber}`
     );
   }
@@ -81,7 +85,7 @@ export class StudentService {
     };
 
     try {
-      const student = await apiClient.post<Student>(this.basePath, backendData, { headers });
+      const student = await studentApiClient.post<Student>(this.basePath, backendData, { headers });
       logger.success('Student Service', `✅ Estudante criado com sucesso: ${student.fullName}`, {
         id: student.id,
         registrationNumber: student.registrationNumber
@@ -135,7 +139,7 @@ export class StudentService {
     };
 
     try {
-      const student = await apiClient.put<Student>(`${this.basePath}/${id}`, backendData, { headers });
+      const student = await studentApiClient.put<Student>(`${this.basePath}/${id}`, backendData, { headers });
       logger.success('Student Service', `✅ Estudante atualizado com sucesso: ${student.fullName}`, {
         id: student.id
       });
@@ -155,7 +159,7 @@ export class StudentService {
     const headers = userId ? { 'X-User-Id': userId } : undefined;
 
     try {
-      const response = await apiClient.delete<ApiResponse>(`${this.basePath}/${id}`, { headers });
+      const response = await studentApiClient.delete<ApiResponse>(`${this.basePath}/${id}`, { headers });
       logger.success('Student Service', `✅ Estudante deletado com sucesso ID: ${id}`);
       return response;
     } catch (error) {
@@ -169,7 +173,7 @@ export class StudentService {
    */
   async restore(id: number, userId?: string): Promise<Student> {
     const headers = userId ? { 'X-User-Id': userId } : undefined;
-    return apiClient.post<Student>(
+    return studentApiClient.post<Student>(
       `${this.basePath}/${id}/restore`,
       undefined,
       { headers }
@@ -185,7 +189,7 @@ export class StudentService {
     userId?: string
   ): Promise<Student> {
     const headers = userId ? { 'X-User-Id': userId } : undefined;
-    return apiClient.patch<Student>(
+    return studentApiClient.patch<Student>(
       `${this.basePath}/${id}/status`,
       undefined,
       { params: { status }, headers }
@@ -199,7 +203,7 @@ export class StudentService {
     courseName: string,
     params?: { page?: number; size?: number }
   ): Promise<PaginatedResponse<Student>> {
-    return apiClient.get<PaginatedResponse<Student>>(
+    return studentApiClient.get<PaginatedResponse<Student>>(
       `${this.basePath}/course/${courseName}`,
       { params }
     );
@@ -213,7 +217,7 @@ export class StudentService {
     semester: number,
     params?: { page?: number; size?: number }
   ): Promise<PaginatedResponse<Student>> {
-    return apiClient.get<PaginatedResponse<Student>>(
+    return studentApiClient.get<PaginatedResponse<Student>>(
       `${this.basePath}/course/${courseName}/semester/${semester}`,
       { params }
     );
@@ -223,14 +227,14 @@ export class StudentService {
    * Get student statistics
    */
   async getStatistics(): Promise<StudentStatistics> {
-    return apiClient.get<StudentStatistics>(`${this.basePath}/statistics`);
+    return studentApiClient.get<StudentStatistics>(`${this.basePath}/statistics`);
   }
 
   /**
    * Count students by course
    */
   async countByCourse(courseName: string): Promise<number> {
-    return apiClient.get<number>(
+    return studentApiClient.get<number>(
       `${this.basePath}/count/course/${courseName}`
     );
   }

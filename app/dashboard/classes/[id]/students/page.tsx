@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/auth-context';
 import { classService } from '@/services/class.service';
 import { studentService } from '@/services/student.service';
 import { Student } from '@/types/student.types';
@@ -23,12 +24,15 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { UserPlus, Trash2, Users } from 'lucide-react';
+import { UserPlus, Trash2, Users, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ClassStudentsPage() {
     const params = useParams();
+    const router = useRouter();
+    const { user } = useAuth();
     const classId = params.id as string;
+    const isAdmin = user?.roles?.includes('ADMIN');
     const [students, setStudents] = useState<Student[]>([]);
     const [allStudents, setAllStudents] = useState<Student[]>([]);
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -103,18 +107,28 @@ export default function ClassStudentsPage() {
     );
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 p-6">
+            <Button
+                variant="ghost"
+                onClick={() => router.push('/dashboard/classes')}
+                className="mb-4"
+            >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Voltar
+            </Button>
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Estudantes da Turma</h1>
                     <p className="text-muted-foreground">
-                        Gerencie os estudantes matriculados nesta turma
+                        {isAdmin ? 'Gerencie os estudantes matriculados nesta turma' : 'Estudantes matriculados nesta turma'}
                     </p>
                 </div>
-                <Button onClick={() => setDialogOpen(true)}>
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Adicionar Estudantes
-                </Button>
+                {isAdmin && (
+                    <Button onClick={() => setDialogOpen(true)}>
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Adicionar Estudantes
+                    </Button>
+                )}
             </div>
 
             <Card>
@@ -134,10 +148,12 @@ export default function ClassStudentsPage() {
                         <div className="text-center py-8 text-muted-foreground">
                             <Users className="mx-auto h-12 w-12 mb-4 opacity-50" />
                             <p>Nenhum estudante matriculado nesta turma.</p>
-                            <Button variant="outline" className="mt-4" onClick={() => setDialogOpen(true)}>
-                                <UserPlus className="mr-2 h-4 w-4" />
-                                Adicionar primeiro estudante
-                            </Button>
+                            {isAdmin && (
+                                <Button variant="outline" className="mt-4" onClick={() => setDialogOpen(true)}>
+                                    <UserPlus className="mr-2 h-4 w-4" />
+                                    Adicionar primeiro estudante
+                                </Button>
+                            )}
                         </div>
                     ) : (
                         <Table>
@@ -147,7 +163,7 @@ export default function ClassStudentsPage() {
                                     <TableHead>Nome</TableHead>
                                     <TableHead>Email</TableHead>
                                     <TableHead>Status</TableHead>
-                                    <TableHead className="text-right">Ações</TableHead>
+                                    {isAdmin && <TableHead className="text-right">Ações</TableHead>}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -164,16 +180,18 @@ export default function ClassStudentsPage() {
                                                 {student.status}
                                             </span>
                                         </TableCell>
-                                        <TableCell className="text-right">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="text-destructive"
-                                                onClick={() => handleRemoveStudent(student.id)}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </TableCell>
+                                        {isAdmin && (
+                                            <TableCell className="text-right">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="text-destructive"
+                                                    onClick={() => handleRemoveStudent(student.id)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
+                                        )}
                                     </TableRow>
                                 ))}
                             </TableBody>

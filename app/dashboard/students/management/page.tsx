@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { studentService } from '@/services/student.service';
 import { Student, StudentStatus } from '@/types/student.types';
 import { Button } from '@/components/ui/button';
@@ -27,10 +28,11 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { RefreshCw, UserCheck, UserX, GraduationCap } from 'lucide-react';
+import { RefreshCw, UserCheck, UserX, GraduationCap, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function StudentManagementPage() {
+    const router = useRouter();
     const [students, setStudents] = useState<Student[]>([]);
     const [deletedStudents, setDeletedStudents] = useState<Student[]>([]);
     const [loading, setLoading] = useState(true);
@@ -96,7 +98,15 @@ export default function StudentManagementPage() {
     ];
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 p-6">
+            <Button
+                variant="ghost"
+                onClick={() => router.push('/dashboard/students')}
+                className="mb-4"
+            >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Voltar
+            </Button>
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">Gerenciamento de Estudantes</h1>
                 <p className="text-muted-foreground">

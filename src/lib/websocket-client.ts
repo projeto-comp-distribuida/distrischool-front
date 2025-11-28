@@ -327,10 +327,10 @@ const getApiBaseUrl = () => {
   // Prefer NEXT_PUBLIC_API_URL if set, otherwise fall back to the known gateway
   const env = process.env.NEXT_PUBLIC_API_URL;
   if (typeof window !== 'undefined') {
-    return env || 'http://distrischool.ddns.net';
+    return env || 'http://192.168.1.7:8080';
   }
   // On server-side use env or remote gateway
-  return env || 'http://distrischool.ddns.net';
+  return env || 'http://192.168.1.7:8080';
 };
 
 export const websocketClient = typeof window !== 'undefined'

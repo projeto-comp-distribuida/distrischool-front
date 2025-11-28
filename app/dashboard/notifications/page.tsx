@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { notificationService } from '@/services/notification.service';
 import { Notification } from '@/types/notification.types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bell, Check, CheckCheck, Trash2 } from 'lucide-react';
+import { Bell, Check, CheckCheck, Trash2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function NotificationsPage() {
@@ -64,7 +65,15 @@ export default function NotificationsPage() {
     const unreadCount = notifications.filter(n => !n.read).length;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 p-6">
+            <Button
+                variant="ghost"
+                onClick={() => router.push('/dashboard')}
+                className="mb-4"
+            >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Voltar ao Dashboard
+            </Button>
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Notificações</h1>

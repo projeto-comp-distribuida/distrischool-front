@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { studentService } from '@/services/student.service';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -10,8 +11,10 @@ import {
     UserCheck,
     UserX,
     BarChart3,
-    PieChart as PieChartIcon
+    PieChart as PieChartIcon,
+    ArrowLeft
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
 interface StudentStatistics {
@@ -27,6 +30,7 @@ interface StudentStatistics {
 }
 
 export default function StatisticsPage() {
+    const router = useRouter();
     const [statistics, setStatistics] = useState<StudentStatistics | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -107,7 +111,15 @@ export default function StatisticsPage() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 p-6">
+            <Button
+                variant="ghost"
+                onClick={() => router.push('/dashboard')}
+                className="mb-4"
+            >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Voltar ao Dashboard
+            </Button>
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">Estatísticas de Estudantes</h1>
                 <p className="text-muted-foreground">

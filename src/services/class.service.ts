@@ -1,23 +1,27 @@
-import { apiClient } from '@/lib/api-client';
+import { ApiClient } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
 import { ClassEntity, CreateClassRequest, UpdateClassRequest } from '@/types/class.types';
-import { PaginatedResponse } from '@/types/student.types';
+
+// Use port 8084 for classes service
+const CLASSES_API_BASE_URL = process.env.NEXT_PUBLIC_CLASSES_API_URL || 'http://192.168.1.7:8084';
+const classesApiClient = new ApiClient(CLASSES_API_BASE_URL);
 
 export class ClassService {
     private basePath = '/api/v1/classes';
 
-    async getAll(params?: { page?: number; size?: number }): Promise<PaginatedResponse<ClassEntity>> {
-        return apiClient.get<PaginatedResponse<ClassEntity>>(this.basePath, { params });
+    async getAll(params?: { page?: number; size?: number }): Promise<ClassEntity[]> {
+        // Backend returns array directly in data field, not paginated response
+        return classesApiClient.get<ClassEntity[]>(this.basePath, { params });
     }
 
     async getById(id: number): Promise<ClassEntity> {
-        return apiClient.get<ClassEntity>(`${this.basePath}/${id}`);
+        return classesApiClient.get<ClassEntity>(`${this.basePath}/${id}`);
     }
 
     async create(data: CreateClassRequest): Promise<ClassEntity> {
         logger.info('Class Service', `Creating class: ${data.name}`);
         try {
-            const classEntity = await apiClient.post<ClassEntity>(this.basePath, data);
+            const classEntity = await classesApiClient.post<ClassEntity>(this.basePath, data);
             logger.success('Class Service', `Class created: ${classEntity.name}`);
             return classEntity;
         } catch (error) {
@@ -27,19 +31,19 @@ export class ClassService {
     }
 
     async update(id: number, data: UpdateClassRequest): Promise<ClassEntity> {
-        return apiClient.put<ClassEntity>(`${this.basePath}/${id}`, data);
+        return classesApiClient.put<ClassEntity>(`${this.basePath}/${id}`, data);
     }
 
     async delete(id: number): Promise<void> {
-        await apiClient.delete(`${this.basePath}/${id}`);
+        await classesApiClient.delete(`${this.basePath}/${id}`);
     }
 
     async addStudents(classId: number, studentIds: number[]): Promise<void> {
-        await apiClient.post(`${this.basePath}/${classId}/students`, studentIds);
+        await classesApiClient.post(`${this.basePath}/${classId}/students`, studentIds);
     }
 
     async addTeachers(classId: number, teacherIds: number[]): Promise<void> {
-        await apiClient.post(`${this.basePath}/${classId}/teachers`, teacherIds);
+        await classesApiClient.post(`${this.basePath}/${classId}/teachers`, teacherIds);
     }
 }
 

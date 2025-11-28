@@ -95,8 +95,9 @@ export function ScheduleForm({ initialData, onSubmit, isLoading, submitLabel = '
                 teacherService.getAll(),
             ]);
 
-            setClasses((classesRes as any).content || (Array.isArray(classesRes) ? classesRes : []));
-            setSubjects((subjectsRes as any).content || (Array.isArray(subjectsRes) ? subjectsRes : []));
+            // classService.getAll() and subjectService.getAll() now return arrays directly
+            setClasses(classesRes);
+            setSubjects(subjectsRes);
             setTeachers((teachersRes as any).content || (Array.isArray(teachersRes) ? teachersRes : []));
         } catch (error) {
             console.error(error);

@@ -19,6 +19,7 @@ export function TeacherForm({ teacher, onSubmit, onCancel, isLoading }: TeacherF
     name: teacher?.name || "",
     employeeId: teacher?.employeeId || "",
     qualification: teacher?.qualification || "",
+    email: teacher?.email || teacher?.contact || "",
     contact: teacher?.contact || "",
     status: teacher?.status || "ACTIVE",
     hireDate: teacher?.hireDate || "",
@@ -51,8 +52,10 @@ export function TeacherForm({ teacher, onSubmit, onCancel, isLoading }: TeacherF
       newErrors.qualification = "Qualificação é obrigatória"
     }
     
-    if (!formData.contact.trim()) {
-      newErrors.contact = "Contato é obrigatório"
+    if (!formData.email.trim()) {
+      newErrors.email = "Email é obrigatório"
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      newErrors.email = "Email inválido"
     }
     
     if (Object.keys(newErrors).length > 0) {
@@ -66,7 +69,8 @@ export function TeacherForm({ teacher, onSubmit, onCancel, isLoading }: TeacherF
       name: formData.name.trim(),
       employeeId: formData.employeeId.trim(),
       qualification: formData.qualification.trim(),
-      contact: formData.contact.trim(),
+      email: formData.email.trim(),
+      contact: formData.contact.trim() || formData.email.trim(),
       status: formData.status as TeacherStatus,
       ...(formData.hireDate && { hireDate: formData.hireDate }),
     }
@@ -140,13 +144,28 @@ export function TeacherForm({ teacher, onSubmit, onCancel, isLoading }: TeacherF
         </div>
 
         <div>
-          <Label htmlFor="contact">Contato (Email ou Telefone) *</Label>
+          <Label htmlFor="email">Email *</Label>
+          <Input
+            id="email"
+            type="email"
+            value={formData.email}
+            onChange={(e) => handleChange("email", e.target.value)}
+            placeholder="professor@escola.com"
+            required
+            className={errors.email ? "border-red-500" : ""}
+          />
+          {errors.email && (
+            <p className="text-sm text-red-500 mt-1">{errors.email}</p>
+          )}
+        </div>
+
+        <div>
+          <Label htmlFor="contact">Contato (Telefone - Opcional)</Label>
           <Input
             id="contact"
             value={formData.contact}
             onChange={(e) => handleChange("contact", e.target.value)}
-            placeholder="professor@escola.com ou (85) 99999-9999"
-            required
+            placeholder="(85) 99999-9999"
             className={errors.contact ? "border-red-500" : ""}
           />
           {errors.contact && (

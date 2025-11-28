@@ -1,6 +1,10 @@
-import { apiClient } from '@/lib/api-client';
+import { ApiClient } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
 import { Attendance, CreateAttendanceRequest, UpdateAttendanceRequest } from '@/types/attendance.types';
+
+// Use port 8084 for attendance service
+const ATTENDANCE_API_BASE_URL = process.env.NEXT_PUBLIC_CLASSES_API_URL || 'http://192.168.1.7:8084';
+const attendanceApiClient = new ApiClient(ATTENDANCE_API_BASE_URL);
 
 export class AttendanceService {
     private basePath = '/api/v1/attendance';
@@ -8,7 +12,7 @@ export class AttendanceService {
     async markAttendance(data: CreateAttendanceRequest): Promise<void> {
         logger.info('Attendance Service', `Marking attendance for schedule: ${data.scheduleId}`);
         try {
-            await apiClient.post(this.basePath, data);
+            await attendanceApiClient.post(this.basePath, data);
             logger.success('Attendance Service', `Attendance marked successfully`);
         } catch (error) {
             logger.error('Attendance Service', `Failed to mark attendance`, error);
@@ -17,15 +21,22 @@ export class AttendanceService {
     }
 
     async update(id: number, data: UpdateAttendanceRequest): Promise<Attendance> {
-        return apiClient.put<Attendance>(`${this.basePath}/${id}`, null, { params: { present: data.present } });
+        return attendanceApiClient.put<Attendance>(`${this.basePath}/${id}`, null, { params: { present: data.present } });
     }
 
     async getBySchedule(scheduleId: number, date?: string): Promise<Attendance[]> {
-        return apiClient.get<Attendance[]>(`${this.basePath}/schedule/${scheduleId}`, { params: { date } });
+        return attendanceApiClient.get<Attendance[]>(`${this.basePath}/schedule/${scheduleId}`, { params: { date } });
     }
 
     async getStudentAttendance(studentId: number, scheduleId: number): Promise<Attendance[]> {
-        return apiClient.get<Attendance[]>(`${this.basePath}/student/${studentId}/schedule/${scheduleId}`);
+        return attendanceApiClient.get<Attendance[]>(`${this.basePath}/student/${studentId}/schedule/${scheduleId}`);
+    }
+
+    /**
+     * Get all attendance records for a student
+     */
+    async getByStudent(studentId: number): Promise<Attendance[]> {
+        return attendanceApiClient.get<Attendance[]>(`${this.basePath}/student/${studentId}`);
     }
 }
 

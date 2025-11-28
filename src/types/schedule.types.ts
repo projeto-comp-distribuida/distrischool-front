@@ -12,9 +12,17 @@ export interface Shift {
 
 export interface Schedule {
     id: number;
-    classEntity: ClassEntity;
-    subject: Subject;
-    shift: Shift;
+    classEntity?: ClassEntity;
+    subject?: Subject;
+    shift?: Shift;
+    classId?: number;
+    className?: string;
+    classCode?: string;
+    subjectId?: number;
+    subjectName?: string;
+    subjectCode?: string;
+    shiftId?: number;
+    shiftName?: string;
     dayOfWeek: DayOfWeek;
     startTime: string;
     endTime: string;

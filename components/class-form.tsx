@@ -13,8 +13,22 @@ import {
     FormLabel,
     FormMessage,
 } from '@/components/ui/form';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { ClassEntity } from '@/types/class.types';
-import { useEffect } from 'react';
+import { Student } from '@/types/student.types';
+import { Teacher } from '@/types/teacher.types';
+import { useEffect, useState } from 'react';
+import { studentService } from '@/services/student.service';
+import { teacherService } from '@/services/teacher.service';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
     name: z.string().min(3, 'Nome deve ter no mínimo 3 caracteres'),
@@ -26,9 +40,17 @@ const formSchema = z.object({
     room: z.string().min(1, 'Sala é obrigatória'),
     startDate: z.string().min(1, 'Data de início é obrigatória'),
     endDate: z.string().min(1, 'Data de término é obrigatória'),
+    studentIds: z.array(z.number()).optional(),
+    teacherIds: z.array(z.number()).optional(),
 });
 
 export type ClassFormValues = z.infer<typeof formSchema>;
+
+const shiftOptions = [
+    { id: 1, label: 'Matutino' },
+    { id: 2, label: 'Vespertino' },
+    { id: 3, label: 'Noturno' },
+];
 
 interface ClassFormProps {
     initialData?: ClassEntity | null;
@@ -38,6 +60,11 @@ interface ClassFormProps {
 }
 
 export function ClassForm({ initialData, onSubmit, isLoading, submitLabel = 'Salvar' }: ClassFormProps) {
+    const [students, setStudents] = useState<Student[]>([]);
+    const [teachers, setTeachers] = useState<Teacher[]>([]);
+    const [loadingStudents, setLoadingStudents] = useState(true);
+    const [loadingTeachers, setLoadingTeachers] = useState(true);
+
     const form = useForm<ClassFormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -50,8 +77,39 @@ export function ClassForm({ initialData, onSubmit, isLoading, submitLabel = 'Sal
             room: '',
             startDate: '',
             endDate: '',
+            studentIds: [],
+            teacherIds: [],
         },
     });
+
+    useEffect(() => {
+        const loadStudents = async () => {
+            try {
+                const response = await studentService.getAll({ page: 0, size: 1000 });
+                const studentsList = Array.isArray(response) ? response : response.content || [];
+                setStudents(studentsList);
+            } catch (error) {
+                console.error('Erro ao carregar estudantes:', error);
+            } finally {
+                setLoadingStudents(false);
+            }
+        };
+
+        const loadTeachers = async () => {
+            try {
+                const teachersList = await teacherService.getAll({ page: 0, size: 1000 });
+                const teachersArray = Array.isArray(teachersList) ? teachersList : teachersList.content || [];
+                setTeachers(teachersArray);
+            } catch (error) {
+                console.error('Erro ao carregar professores:', error);
+            } finally {
+                setLoadingTeachers(false);
+            }
+        };
+
+        loadStudents();
+        loadTeachers();
+    }, []);
 
     useEffect(() => {
         if (initialData) {
@@ -61,10 +119,12 @@ export function ClassForm({ initialData, onSubmit, isLoading, submitLabel = 'Sal
                 academicYear: initialData.academicYear.toString(),
                 period: initialData.period.toString(),
                 capacity: initialData.capacity,
-                shiftId: initialData.shift?.id || 1,
+                shiftId: initialData.shiftId || initialData.shift?.id || 1,
                 room: initialData.room,
                 startDate: initialData.startDate,
                 endDate: initialData.endDate,
+                studentIds: initialData.studentIds || [],
+                teacherIds: initialData.teacherIds || [],
             });
         }
     }, [initialData, form]);
@@ -133,6 +193,50 @@ export function ClassForm({ initialData, onSubmit, isLoading, submitLabel = 'Sal
 
                     <FormField
                         control={form.control}
+                        name="shiftId"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Turno</FormLabel>
+                                <Select
+                                    onValueChange={(value) => field.onChange(Number(value))}
+                                    value={field.value ? String(field.value) : undefined}
+                                >
+                                    <FormControl>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Selecione o turno" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {shiftOptions.map((shift) => (
+                                            <SelectItem key={shift.id} value={shift.id.toString()}>
+                                                {shift.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="period"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Período</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="Ex: 1" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    <FormField
+                        control={form.control}
                         name="room"
                         render={({ field }) => (
                             <FormItem>
@@ -175,6 +279,132 @@ export function ClassForm({ initialData, onSubmit, isLoading, submitLabel = 'Sal
                         )}
                     />
                 </div>
+
+                {/* Seleção de Estudantes */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-lg">Estudantes</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {loadingStudents ? (
+                            <div className="flex items-center justify-center py-4">
+                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                <span className="ml-2 text-sm text-muted-foreground">Carregando estudantes...</span>
+                            </div>
+                        ) : (
+                            <FormField
+                                control={form.control}
+                                name="studentIds"
+                                render={() => (
+                                    <FormItem>
+                                        <div className="max-h-60 overflow-y-auto space-y-2 border rounded-md p-4">
+                                            {students.length === 0 ? (
+                                                <p className="text-sm text-muted-foreground">Nenhum estudante disponível</p>
+                                            ) : (
+                                                students.map((student) => (
+                                                    <FormField
+                                                        key={student.id}
+                                                        control={form.control}
+                                                        name="studentIds"
+                                                        render={({ field }) => {
+                                                            return (
+                                                                <FormItem
+                                                                    key={student.id}
+                                                                    className="flex flex-row items-start space-x-3 space-y-0"
+                                                                >
+                                                                    <FormControl>
+                                                                        <Checkbox
+                                                                            checked={field.value?.includes(student.id)}
+                                                                            onCheckedChange={(checked) => {
+                                                                                const currentIds = field.value || [];
+                                                                                return checked
+                                                                                    ? field.onChange([...currentIds, student.id])
+                                                                                    : field.onChange(
+                                                                                          currentIds.filter((id) => id !== student.id)
+                                                                                      );
+                                                                            }}
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormLabel className="font-normal cursor-pointer flex-1">
+                                                                        {student.fullName} - {student.registrationNumber}
+                                                                        {student.course && ` (${student.course})`}
+                                                                    </FormLabel>
+                                                                </FormItem>
+                                                            );
+                                                        }}
+                                                    />
+                                                ))
+                                            )}
+                                        </div>
+                                    </FormItem>
+                                )}
+                            />
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Seleção de Professores */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-lg">Professores</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {loadingTeachers ? (
+                            <div className="flex items-center justify-center py-4">
+                                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                <span className="ml-2 text-sm text-muted-foreground">Carregando professores...</span>
+                            </div>
+                        ) : (
+                            <FormField
+                                control={form.control}
+                                name="teacherIds"
+                                render={() => (
+                                    <FormItem>
+                                        <div className="max-h-60 overflow-y-auto space-y-2 border rounded-md p-4">
+                                            {teachers.length === 0 ? (
+                                                <p className="text-sm text-muted-foreground">Nenhum professor disponível</p>
+                                            ) : (
+                                                teachers.map((teacher) => (
+                                                    <FormField
+                                                        key={teacher.id}
+                                                        control={form.control}
+                                                        name="teacherIds"
+                                                        render={({ field }) => {
+                                                            return (
+                                                                <FormItem
+                                                                    key={teacher.id}
+                                                                    className="flex flex-row items-start space-x-3 space-y-0"
+                                                                >
+                                                                    <FormControl>
+                                                                        <Checkbox
+                                                                            checked={field.value?.includes(teacher.id)}
+                                                                            onCheckedChange={(checked) => {
+                                                                                const currentIds = field.value || [];
+                                                                                return checked
+                                                                                    ? field.onChange([...currentIds, teacher.id])
+                                                                                    : field.onChange(
+                                                                                          currentIds.filter((id) => id !== teacher.id)
+                                                                                      );
+                                                                            }}
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormLabel className="font-normal cursor-pointer flex-1">
+                                                                        {teacher.name || teacher.fullName} - {teacher.employeeId}
+                                                                        {teacher.qualification && ` (${teacher.qualification})`}
+                                                                    </FormLabel>
+                                                                </FormItem>
+                                                            );
+                                                        }}
+                                                    />
+                                                ))
+                                            )}
+                                        </div>
+                                    </FormItem>
+                                )}
+                            />
+                        )}
+                    </CardContent>
+                </Card>
 
                 <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? 'Salvando...' : submitLabel}

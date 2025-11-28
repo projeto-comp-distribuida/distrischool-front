@@ -26,7 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StudentForm } from "@/components/student-form"
 import { studentService } from "@/services/student.service"
 import type { Student, StudentStatus, CreateStudentRequest } from "@/types/student.types"
-import { Plus, Search, Pencil, Trash2, RefreshCw, GraduationCap } from "lucide-react"
+import { Plus, Search, Pencil, Trash2, RefreshCw, GraduationCap, ArrowLeft } from "lucide-react"
 
 function StudentsPageContent() {
   const router = useRouter()
@@ -225,6 +225,14 @@ function StudentsPageContent() {
   return (
     <div className="min-h-screen p-6">
       <div className="container mx-auto">
+        <Button
+          variant="ghost"
+          onClick={() => router.push('/dashboard')}
+          className="mb-4"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Voltar ao Dashboard
+        </Button>
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -452,7 +460,7 @@ function StudentsPageContent() {
 
 export default function StudentsPage() {
   return (
-    <ProtectedRoute allowedRoles={['ADMIN', 'TEACHER']}>
+    <ProtectedRoute allowedRoles={['ADMIN']}>
       <StudentsPageContent />
     </ProtectedRoute>
   )

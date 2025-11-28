@@ -1,23 +1,27 @@
-import { apiClient } from '@/lib/api-client';
+import { ApiClient } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
 import { Subject, CreateSubjectRequest, UpdateSubjectRequest } from '@/types/subject.types';
-import { PaginatedResponse } from '@/types/student.types';
+
+// Use port 8084 for subjects service
+const SUBJECTS_API_BASE_URL = process.env.NEXT_PUBLIC_CLASSES_API_URL || 'http://192.168.1.7:8084';
+const subjectsApiClient = new ApiClient(SUBJECTS_API_BASE_URL);
 
 export class SubjectService {
     private basePath = '/api/v1/subjects';
 
-    async getAll(params?: { page?: number; size?: number }): Promise<PaginatedResponse<Subject>> {
-        return apiClient.get<PaginatedResponse<Subject>>(this.basePath, { params });
+    async getAll(params?: { page?: number; size?: number }): Promise<Subject[]> {
+        // Backend returns array directly in data field, not paginated response
+        return subjectsApiClient.get<Subject[]>(this.basePath, { params });
     }
 
     async getById(id: number): Promise<Subject> {
-        return apiClient.get<Subject>(`${this.basePath}/${id}`);
+        return subjectsApiClient.get<Subject>(`${this.basePath}/${id}`);
     }
 
     async create(data: CreateSubjectRequest): Promise<Subject> {
         logger.info('Subject Service', `Creating subject: ${data.name}`);
         try {
-            const subject = await apiClient.post<Subject>(this.basePath, data);
+            const subject = await subjectsApiClient.post<Subject>(this.basePath, data);
             logger.success('Subject Service', `Subject created: ${subject.name}`);
             return subject;
         } catch (error) {
@@ -27,11 +31,11 @@ export class SubjectService {
     }
 
     async update(id: number, data: UpdateSubjectRequest): Promise<Subject> {
-        return apiClient.put<Subject>(`${this.basePath}/${id}`, data);
+        return subjectsApiClient.put<Subject>(`${this.basePath}/${id}`, data);
     }
 
     async delete(id: number): Promise<void> {
-        await apiClient.delete(`${this.basePath}/${id}`);
+        await subjectsApiClient.delete(`${this.basePath}/${id}`);
     }
 }
 
