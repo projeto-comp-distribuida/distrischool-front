@@ -85,12 +85,6 @@ export function LoginForm() {
             {isLoading ? "Entrando..." : "Entrar"}
           </Button>
           
-          <div className="text-center text-sm text-muted-foreground">
-            Não tem uma conta?{" "}
-            <a href="/register" className="text-foreground hover:underline">
-              Criar conta
-            </a>
-          </div>
         </form>
       </CardContent>
     </Card>

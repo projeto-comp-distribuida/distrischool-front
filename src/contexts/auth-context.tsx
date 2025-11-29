@@ -6,14 +6,13 @@ import { authService } from '@/services/auth.service';
 import { notificationService } from '@/services/notification.service';
 import { apiClient } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
-import type { User, LoginRequest, RegisterRequest } from '@/types/auth.types';
+import type { User, LoginRequest } from '@/types/auth.types';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (credentials: LoginRequest) => Promise<void>;
-  register: (data: RegisterRequest) => Promise<void>;
   logout: (reason?: string) => void;
   refreshUser: () => Promise<void>;
 }
@@ -192,43 +191,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const register = useCallback(async (data: RegisterRequest) => {
-    logger.info('Auth Context', '📝 Iniciando processo de registro...', {
-      email: data.email,
-      name: `${data.firstName} ${data.lastName}`.trim()
-    });
-    
-    setIsLoading(true);
-    try {
-      const response = await authService.register(data);
-      
-      if (!response.success) {
-        const errorMsg = response.message || 'Registration failed';
-        logger.error('Auth Context', '❌ Registro falhou', { message: errorMsg });
-        throw new Error(errorMsg);
-      }
-      
-      logger.success('Auth Context', '✅ Registro realizado com sucesso!', {
-        email: data.email
-      });
-      toast.success('Cadastro concluído!', {
-        description: 'Verifique seu e-mail para confirmar o acesso.',
-      });
-      
-      // Note: After registration, user may need to verify email
-      // So we don't automatically log them in
-    } catch (error) {
-      logger.error('Auth Context', '❌ Erro durante registro', error);
-      const message = error instanceof Error ? error.message : 'Não foi possível concluir o cadastro.';
-      toast.error('Falha ao cadastrar', {
-        description: message,
-      });
-      throw error;
-    } finally {
-      setIsLoading(false);
-      logger.debug('Auth Context', 'Processo de registro finalizado');
-    }
-  }, []);
 
   const refreshUser = useCallback(async () => {
     logger.info('Auth Context', '🔄 Atualizando dados do usuário...');
@@ -289,7 +251,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     isAuthenticated: !!user && authService.isAuthenticated(),
     login,
-    register,
     logout,
     refreshUser,
   };

@@ -1,0 +1,851 @@
+{
+	"info": {
+		"_postman_id": "schedule-management-api",
+		"name": "DistriSchool Schedule Management API",
+		"description": "Postman collection for DistriSchool Schedule Management Service API endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Attendance",
+			"item": [
+				{
+					"name": "Mark Attendance",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"scheduleId\": 1,\n  \"date\": \"2024-01-15\",\n  \"studentPresence\": {\n    \"1\": true,\n    \"2\": false,\n    \"3\": true\n  },\n  \"notes\": \"Aula normal\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/attendance",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"attendance"
+							]
+						},
+						"description": "Registra presença de múltiplos estudantes para um schedule em uma data específica. Requer role ADMIN ou TEACHER."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Attendance",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/attendance/:id?present=true",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"attendance",
+								":id"
+							],
+							"query": [
+								{
+									"key": "present",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Atualiza o status de presença de um registro específico. Requer role ADMIN ou TEACHER."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Attendance by Schedule",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/attendance/schedule/:scheduleId?date=2024-01-15",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"attendance",
+								"schedule",
+								":scheduleId"
+							],
+							"query": [
+								{
+									"key": "date",
+									"value": "2024-01-15",
+									"description": "Optional date filter (ISO format: YYYY-MM-DD)"
+								}
+							]
+						},
+						"description": "Busca presenças por schedule ID, opcionalmente filtrado por data."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Student Attendance",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/attendance/student/:studentId/schedule/:scheduleId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"attendance",
+								"student",
+								":studentId",
+								"schedule",
+								":scheduleId"
+							]
+						},
+						"description": "Busca histórico de presenças de um estudante específico em um schedule."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Attendance by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/attendance/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"attendance",
+								":id"
+							]
+						},
+						"description": "Busca um registro de presença específico por ID."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints para gerenciamento de presenças (attendance)"
+		},
+		{
+			"name": "Classes",
+			"item": [
+				{
+					"name": "Create Class",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Turma A - 2024\",\n  \"code\": \"TURMA-A-2024\",\n  \"academicYear\": \"2024\",\n  \"period\": \"1\",\n  \"capacity\": 30,\n  \"shiftId\": 1,\n  \"startDate\": \"2024-01-15\",\n  \"endDate\": \"2024-12-15\",\n  \"room\": \"Sala 101\",\n  \"studentIds\": [1, 2, 3],\n  \"teacherIds\": [1, 2]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/classes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"classes"
+							]
+						},
+						"description": "Cria uma nova turma. Requer role ADMIN ou TEACHER."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Class",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Turma A - 2024 (Atualizada)\",\n  \"code\": \"TURMA-A-2024\",\n  \"academicYear\": \"2024\",\n  \"period\": \"1\",\n  \"capacity\": 35,\n  \"shiftId\": 1,\n  \"startDate\": \"2024-01-15\",\n  \"endDate\": \"2024-12-15\",\n  \"room\": \"Sala 102\",\n  \"studentIds\": [1, 2, 3, 4],\n  \"teacherIds\": [1, 2, 3]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/classes/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"classes",
+								":id"
+							]
+						},
+						"description": "Atualiza uma turma existente. Requer role ADMIN ou TEACHER."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Class",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/classes/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"classes",
+								":id"
+							]
+						},
+						"description": "Deleta uma turma (soft delete). Requer role ADMIN."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Class by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/classes/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"classes",
+								":id"
+							]
+						},
+						"description": "Busca uma turma específica por ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Classes",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/classes",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"classes"
+							]
+						},
+						"description": "Lista todas as turmas."
+					},
+					"response": []
+				},
+				{
+					"name": "Add Students to Class",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[1, 2, 3, 4, 5]"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/classes/:id/students",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"classes",
+								":id",
+								"students"
+							]
+						},
+						"description": "Adiciona múltiplos estudantes a uma turma. Requer role ADMIN ou TEACHER."
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Student from Class",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/classes/:id/students/:studentId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"classes",
+								":id",
+								"students",
+								":studentId"
+							]
+						},
+						"description": "Remove um estudante de uma turma. Requer role ADMIN ou TEACHER."
+					},
+					"response": []
+				},
+				{
+					"name": "Add Teachers to Class",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "[1, 2, 3]"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/classes/:id/teachers",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"classes",
+								":id",
+								"teachers"
+							]
+						},
+						"description": "Adiciona múltiplos professores a uma turma. Requer role ADMIN ou TEACHER."
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Teacher from Class",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/classes/:id/teachers/:teacherId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"classes",
+								":id",
+								"teachers",
+								":teacherId"
+							]
+						},
+						"description": "Remove um professor de uma turma. Requer role ADMIN ou TEACHER."
+					},
+					"response": []
+				},
+				{
+					"name": "Check Room Conflicts",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/classes/:id/room-conflicts?room=Sala 101",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"classes",
+								":id",
+								"room-conflicts"
+							],
+							"query": [
+								{
+									"key": "room",
+									"value": "Sala 101",
+									"description": "Optional room name. If not provided, uses the class's room."
+								}
+							]
+						},
+						"description": "Verifica conflitos de sala para uma turma específica."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints para gerenciamento de turmas (classes)"
+		},
+		{
+			"name": "Schedules",
+			"item": [
+				{
+					"name": "Create Schedule",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"classEntity\": {\n    \"id\": 1\n  },\n  \"subject\": {\n    \"id\": 1\n  },\n  \"shift\": {\n    \"id\": 1\n  },\n  \"dayOfWeek\": \"MONDAY\",\n  \"startTime\": \"08:00:00\",\n  \"endTime\": \"09:30:00\",\n  \"room\": \"Sala 101\",\n  \"teacherId\": 1,\n  \"active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/schedules",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"schedules"
+							]
+						},
+						"description": "Cria um novo horário. Requer role ADMIN ou TEACHER. Nota: O body deve conter objetos aninhados para classEntity, subject e shift com apenas o ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Schedule",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"classEntity\": {\n    \"id\": 1\n  },\n  \"subject\": {\n    \"id\": 1\n  },\n  \"shift\": {\n    \"id\": 1\n  },\n  \"dayOfWeek\": \"MONDAY\",\n  \"startTime\": \"08:00:00\",\n  \"endTime\": \"10:00:00\",\n  \"room\": \"Sala 102\",\n  \"teacherId\": 1,\n  \"active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/schedules/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"schedules",
+								":id"
+							]
+						},
+						"description": "Atualiza um horário existente. Requer role ADMIN ou TEACHER."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Schedule",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/schedules/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"schedules",
+								":id"
+							]
+						},
+						"description": "Deleta um horário. Requer role ADMIN ou TEACHER."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Schedule by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/schedules/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"schedules",
+								":id"
+							]
+						},
+						"description": "Busca um horário específico por ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Schedules",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/schedules",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"schedules"
+							]
+						},
+						"description": "Lista todos os horários."
+					},
+					"response": []
+				},
+				{
+					"name": "Check Schedule Conflicts",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/schedules/:id/check-conflicts",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"schedules",
+								":id",
+								"check-conflicts"
+							]
+						},
+						"description": "Verifica conflitos de horário para um schedule específico."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints para gerenciamento de horários (schedules)"
+		},
+		{
+			"name": "Subjects",
+			"item": [
+				{
+					"name": "Create Subject",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Matemática\",\n  \"code\": \"MAT-001\",\n  \"workloadHours\": 60,\n  \"description\": \"Curso de Matemática Básica\",\n  \"academicCenterId\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/subjects",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"subjects"
+							]
+						},
+						"description": "Cria um novo curso/disciplina. Requer role ADMIN."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Subject",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Matemática Avançada\",\n  \"code\": \"MAT-001\",\n  \"workloadHours\": 80,\n  \"description\": \"Curso de Matemática Avançada\",\n  \"academicCenterId\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/subjects/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"subjects",
+								":id"
+							]
+						},
+						"description": "Atualiza um curso/disciplina existente. Requer role ADMIN."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Subject by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subjects/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"subjects",
+								":id"
+							]
+						},
+						"description": "Busca um curso/disciplina específico por ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Subjects",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subjects",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"subjects"
+							]
+						},
+						"description": "Lista todos os cursos/disciplinas."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Subjects by Academic Center",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subjects/academic-center/:academicCenterId",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"subjects",
+								"academic-center",
+								":academicCenterId"
+							]
+						},
+						"description": "Lista todos os cursos/disciplinas de um centro acadêmico específico."
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints para gerenciamento de cursos/disciplinas (subjects)"
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
+

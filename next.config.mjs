@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -18,6 +17,8 @@ const nextConfig = {
     NEXT_PUBLIC_TEACHER_MANAGEMENT_SERVICE_URL: process.env.NEXT_PUBLIC_TEACHER_MANAGEMENT_SERVICE_URL || 'http://distrischool.ddns.net/api/v1/teacher-management',
     NEXT_PUBLIC_NOTIFICATION_SERVICE_URL: process.env.NEXT_PUBLIC_NOTIFICATION_SERVICE_URL || 'http://distrischool.ddns.net/api/v1/notifications',
   },
+  // produce the standalone server.js bundle used by the Docker image
+  output: 'standalone',
 }
 
 export default nextConfig

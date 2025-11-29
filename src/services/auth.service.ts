@@ -1,29 +1,43 @@
 // Authentication Service
 
-import { apiClient } from '@/lib/api-client';
+import { ApiClient, apiClient as defaultApiClient } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
 import type {
   LoginRequest,
   LoginResponse,
-  RegisterRequest,
-  RegisterResponse,
   User,
   ApiResponse,
   ForgotPasswordRequest,
   ResetPasswordRequest,
   VerifyEmailRequest,
+  UpdateProfileRequest,
+  ChangePasswordRequest,
 } from '@/types/auth.types';
 
 export class AuthService {
+  private apiClient: ApiClient;
   private basePath = '/api/v1/auth';
+
+  constructor() {
+    // Use NEXT_PUBLIC_AUTH_SERVICE_URL if available, otherwise fall back to NEXT_PUBLIC_API_URL
+    const authServiceUrl = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
+    if (authServiceUrl) {
+      // Extract base URL (remove /api/v1/auth path if present)
+      const baseUrl = authServiceUrl.replace(/\/api\/v1\/auth.*$/, '');
+      this.apiClient = new ApiClient(baseUrl);
+    } else {
+      // Fall back to default apiClient behavior
+      this.apiClient = defaultApiClient;
+    }
+  }
 
   /**
    * Login with email and password
    */
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     logger.info('Auth Service', `Tentando fazer login para: ${credentials.email}`);
-    
-    const response = await apiClient.post<unknown>(
+
+    const response = await this.apiClient.post<unknown>(
       `${this.basePath}/login`,
       credentials
     );
@@ -58,75 +72,25 @@ export class AuthService {
       throw new Error(message);
     }
 
-    apiClient.setToken(payload.token);
+    // Store token and clear any stale cached user data
+    this.apiClient.setToken(payload.token);
+    if (typeof window !== 'undefined') {
+      try {
+        window.sessionStorage.removeItem('currentUser');
+        window.localStorage.removeItem('currentUser');
+      } catch (e) {
+        logger.error('Auth Service', 'Erro ao limpar cache de usuário após login', e);
+      }
+    }
     logger.success('Auth Service', `✅ Login bem-sucedido para: ${credentials.email}`);
 
     const normalizedResponse: LoginResponse = isWrappedResponse
       ? (response as LoginResponse)
       : {
-          success: true,
-          message: 'Login realizado com sucesso',
-          data: payload,
-        };
-
-    return normalizedResponse;
-  }
-
-  /**
-   * Register a new user
-   */
-  async register(data: RegisterRequest): Promise<RegisterResponse> {
-    logger.info('Auth Service', `Tentando registrar novo usuário: ${data.email}`);
-    
-    const response = await apiClient.post<unknown>(
-      `${this.basePath}/register`,
-      data
-    );
-
-    const isWrappedResponse =
-      typeof response === 'object' &&
-      response !== null &&
-      'success' in response &&
-      'data' in response;
-
-    const payload = isWrappedResponse
-      ? (response as RegisterResponse).data
-      : response;
-
-    let user = undefined as RegisterResponse['data']['user'] | undefined;
-
-    if (payload && typeof payload === 'object' && 'user' in payload) {
-      user = (payload as RegisterResponse['data']).user;
-    } else if (payload && typeof payload === 'object') {
-      user = payload as RegisterResponse['data']['user'];
-    }
-
-    if (!user) {
-      const message =
-        isWrappedResponse && 'message' in (response as RegisterResponse)
-          ? (response as RegisterResponse).message
-          : 'Resposta de registro inválida';
-
-      logger.error('Auth Service', `❌ Registro falhou para: ${data.email}`, {
-        message,
-      });
-      throw new Error(message);
-    }
-
-    const normalizedPayload: RegisterResponse['data'] =
-      payload && typeof payload === 'object' && 'user' in payload
-        ? (payload as RegisterResponse['data'])
-        : { user };
-
-    logger.success('Auth Service', `✅ Usuário registrado com sucesso: ${data.email}`);
-
-    const normalizedResponse: RegisterResponse = isWrappedResponse
-      ? (response as RegisterResponse)
-      : {
-          success: true,
-          message: 'Registro realizado com sucesso',
-          data: normalizedPayload,
-        };
+        success: true,
+        message: 'Login realizado com sucesso',
+        data: payload,
+      };
 
     return normalizedResponse;
   }
@@ -136,7 +100,7 @@ export class AuthService {
    */
   logout(): void {
     logger.info('Auth Service', 'Fazendo logout do usuário');
-    apiClient.setToken(null);
+    this.apiClient.setToken(null);
     if (typeof window !== 'undefined') {
       try {
         window.sessionStorage.removeItem('authToken');
@@ -155,15 +119,15 @@ export class AuthService {
    */
   async getCurrentUser(): Promise<User> {
     logger.debug('Auth Service', 'Buscando dados do usuário atual');
-    
-    const token = apiClient.getToken();
+
+    const token = this.apiClient.getToken();
     if (!token) {
       logger.error('Auth Service', '❌ Token de autenticação não encontrado');
       throw new Error('No authentication token found');
     }
 
     try {
-      const user = await apiClient.get<User>(`${this.basePath}/me`);
+      const user = await this.apiClient.get<User>(`${this.basePath}/me`);
 
       logger.success('Auth Service', '✅ Dados do usuário atual obtidos do backend', {
         userId: user.id,
@@ -236,7 +200,7 @@ export class AuthService {
    * Request password reset
    */
   async forgotPassword(data: ForgotPasswordRequest): Promise<ApiResponse> {
-    return apiClient.post<ApiResponse>(
+    return this.apiClient.post<ApiResponse>(
       `${this.basePath}/forgot-password`,
       data
     );
@@ -246,7 +210,7 @@ export class AuthService {
    * Reset password with token
    */
   async resetPassword(data: ResetPasswordRequest): Promise<ApiResponse> {
-    return apiClient.post<ApiResponse>(
+    return this.apiClient.post<ApiResponse>(
       `${this.basePath}/reset-password`,
       data
     );
@@ -256,7 +220,7 @@ export class AuthService {
    * Verify email with token
    */
   async verifyEmail(data: VerifyEmailRequest): Promise<ApiResponse> {
-    return apiClient.post<ApiResponse>(
+    return this.apiClient.post<ApiResponse>(
       `${this.basePath}/verify-email`,
       data
     );
@@ -266,15 +230,70 @@ export class AuthService {
    * Health check
    */
   async healthCheck(): Promise<ApiResponse> {
-    return apiClient.get<ApiResponse>(`${this.basePath}/health`);
+    return this.apiClient.get<ApiResponse>(`${this.basePath}/health`);
   }
 
   /**
    * Check if user is authenticated
    */
   isAuthenticated(): boolean {
-    const token = apiClient.getToken();
+    const token = this.apiClient.getToken();
     return !!token;
+  }
+
+  /**
+   * Update user profile
+   */
+  async updateProfile(data: UpdateProfileRequest): Promise<User> {
+    logger.info('Auth Service', 'Atualizando perfil do usuário');
+    
+    try {
+      const user = await this.apiClient.patch<User>(`${this.basePath}/me`, data);
+      
+      logger.success('Auth Service', '✅ Perfil atualizado com sucesso', {
+        userId: user.id,
+        email: user.email,
+      });
+
+      if (typeof window !== 'undefined') {
+        try {
+          window.sessionStorage.setItem('currentUser', JSON.stringify(user));
+          window.localStorage.removeItem('currentUser');
+          logger.debug('Auth Service', 'Usuário atualizado no cache de sessão');
+        } catch (error) {
+          logger.error('Auth Service', 'Erro ao salvar usuário no sessionStorage', error);
+        }
+      }
+
+      return user;
+    } catch (error) {
+      logger.error('Auth Service', '❌ Erro ao atualizar perfil', error);
+      throw error instanceof Error
+        ? error
+        : new Error('Failed to update profile');
+    }
+  }
+
+  /**
+   * Change user password
+   */
+  async changePassword(data: ChangePasswordRequest): Promise<ApiResponse> {
+    logger.info('Auth Service', 'Alterando senha do usuário');
+    
+    try {
+      const response = await this.apiClient.post<ApiResponse>(
+        `${this.basePath}/change-password`,
+        data
+      );
+      
+      logger.success('Auth Service', '✅ Senha alterada com sucesso');
+      return response;
+    } catch (error) {
+      logger.error('Auth Service', '❌ Erro ao alterar senha', error);
+      throw error instanceof Error
+        ? error
+        : new Error('Failed to change password');
+    }
   }
 
 }

@@ -5,15 +5,7 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import {
-  BookOpen,
-  Users,
-  GraduationCap,
-  LogOut,
-  RefreshCw,
-  NotebookPen,
-  ClipboardList,
-} from "lucide-react"
+import { BookOpen, Users, GraduationCap, LogOut, RefreshCw, BookMarked, UserCheck, BarChart3 } from "lucide-react"
 import { NotificationCenter } from "@/components/notification-center"
 
 export default function DashboardPage() {
@@ -37,8 +29,8 @@ export default function DashboardPage() {
   const handleDebugInfo = () => {
     console.log('=== DEBUG INFO ===')
     console.log('User from context:', user)
-    console.log('sessionStorage currentUser:', sessionStorage.getItem('currentUser'))
-    console.log('sessionStorage authToken:', sessionStorage.getItem('authToken'))
+    console.log('localStorage currentUser:', localStorage.getItem('currentUser'))
+    console.log('localStorage authToken:', localStorage.getItem('authToken'))
     console.log('==================')
   }
 
@@ -103,107 +95,172 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Students Card */}
-          {(userRole === 'ADMIN' || userRole === 'TEACHER') && (
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/students')}>
+        {/* Principal Actions - Most Used */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">Acesso Rápido</h2>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Students Card */}
+            {userRole === 'ADMIN' && (
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/students')}>
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <GraduationCap className="h-6 w-6 text-primary" />
+                    <CardTitle>Estudantes</CardTitle>
+                  </div>
+                  <CardDescription className="text-sm">
+                    Gerencie alunos e matrículas
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full" size="sm">Acessar</Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Teachers Card */}
+            {userRole === 'ADMIN' && (
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/teachers')}>
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <Users className="h-6 w-6 text-primary" />
+                    <CardTitle>Professores</CardTitle>
+                  </div>
+                  <CardDescription className="text-sm">
+                    Gerencie professores e atribuições
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full" size="sm">Acessar</Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Teacher Classes Card */}
+            {userRole === 'TEACHER' && (
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/teacher/classes')}>
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <BookOpen className="h-6 w-6 text-primary" />
+                    <CardTitle>Minhas Turmas</CardTitle>
+                  </div>
+                  <CardDescription className="text-sm">
+                    Visualize suas turmas e faça chamadas
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full" size="sm">Acessar</Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Student Classes Card */}
+            {userRole === 'STUDENT' && (
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/courses')}>
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <BookOpen className="h-6 w-6 text-primary" />
+                    <CardTitle>Minhas Disciplinas</CardTitle>
+                  </div>
+                  <CardDescription className="text-sm">
+                    Visualize as disciplinas em que você está matriculado
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full" size="sm">Acessar</Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Student Grades Card */}
+            {userRole === 'STUDENT' && (
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/grades/my-grades')}>
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <GraduationCap className="h-6 w-6 text-primary" />
+                    <CardTitle>Minhas Notas</CardTitle>
+                  </div>
+                  <CardDescription className="text-sm">
+                    Visualize suas notas e médias por disciplina
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full" size="sm">Acessar</Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* My Profile Card */}
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/profile')}>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <GraduationCap className="h-8 w-8 text-primary" />
-                  <CardTitle className="text-2xl">Estudantes</CardTitle>
+                <div className="flex items-center gap-3">
+                  <BookOpen className="h-6 w-6 text-primary" />
+                  <CardTitle>Meu Perfil</CardTitle>
                 </div>
-                <CardDescription>
-                  Gerencie alunos, matrículas e informações acadêmicas
+                <CardDescription className="text-sm">
+                  Visualize e edite suas informações
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button className="w-full">Acessar</Button>
+                <Button className="w-full" size="sm" variant="outline">Acessar</Button>
               </CardContent>
             </Card>
-          )}
-
-          {/* Classes Card */}
-          {(userRole === 'ADMIN' || userRole === 'TEACHER' || userRole === 'STUDENT') && (
-            <Card
-              className="hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => router.push('/dashboard/classes')}
-            >
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <NotebookPen className="h-8 w-8 text-primary" />
-                  <CardTitle className="text-2xl">Turmas</CardTitle>
-                </div>
-                <CardDescription>
-                  {userRole === 'STUDENT'
-                    ? 'Visualize seu cronograma e professores responsáveis'
-                    : 'Organize cronogramas, participantes e próximos encontros'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full" variant={userRole === 'STUDENT' ? 'outline' : 'default'}>
-                  {userRole === 'STUDENT' ? 'Ver turmas' : 'Gerenciar'}
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Teachers Card */}
-          {(userRole === 'ADMIN' || userRole === 'TEACHER') && (
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/teachers')}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <Users className="h-8 w-8 text-primary" />
-                  <CardTitle className="text-2xl">Professores</CardTitle>
-                </div>
-                <CardDescription>
-                  Gerencie professores, atribuições e horários
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full">Acessar</Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Grades Card */}
-          <Card
-            className="hover:shadow-lg transition-shadow cursor-pointer"
-            onClick={() => router.push('/dashboard/grades')}
-          >
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <ClipboardList className="h-8 w-8 text-primary" />
-                <CardTitle className="text-2xl">Notas</CardTitle>
-              </div>
-              <CardDescription>
-                {userRole === 'STUDENT'
-                  ? 'Consulte suas avaliações e feedbacks dos professores'
-                  : 'Acompanhe e edite notas para cada avaliação'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button className="w-full">
-                {userRole === 'STUDENT' ? 'Ver minhas notas' : 'Abrir gerenciamento'}
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* My Profile Card */}
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/profile')}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <BookOpen className="h-8 w-8 text-primary" />
-                <CardTitle className="text-2xl">Meu Perfil</CardTitle>
-              </div>
-              <CardDescription>
-                Visualize e edite suas informações pessoais
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button className="w-full" variant="outline">Acessar</Button>
-            </CardContent>
-          </Card>
+          </div>
         </div>
+
+        {/* Admin Section */}
+        {userRole === 'ADMIN' && (
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Gestão Acadêmica</h2>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/courses')}>
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <BookMarked className="h-6 w-6 text-primary" />
+                    <CardTitle>Cursos e Disciplinas</CardTitle>
+                  </div>
+                  <CardDescription className="text-sm">
+                    Gerencie cursos, turmas, horários e chamadas
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full" size="sm">Acessar</Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {/* Additional Admin Options */}
+        {userRole === 'ADMIN' && (
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">Outros</h2>
+            <div className="grid md:grid-cols-2 gap-4">
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/assignments')}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <UserCheck className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-base">Atribuições</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full" size="sm" variant="outline">Acessar</Button>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/reports/performance')}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-base">Relatórios</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <Button className="w-full" size="sm" variant="outline">Acessar</Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
 
         {/* User Info Card */}
         <Card className="mt-8">

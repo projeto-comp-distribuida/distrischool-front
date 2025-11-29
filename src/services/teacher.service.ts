@@ -1,6 +1,6 @@
 // Teacher Management Service
 
-import { apiClient } from '@/lib/api-client';
+import { ApiClient } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
 import type {
   Teacher,
@@ -15,6 +15,9 @@ import type {
   TeacherStatus,
 } from '@/types/teacher.types';
 import type { ApiResponse } from '@/types/auth.types';
+
+const TEACHER_SERVICE_BASE_URL = process.env.NEXT_PUBLIC_TEACHER_SERVICE_URL || 'http://192.168.1.7:8082';
+const teacherApiClient = new ApiClient(TEACHER_SERVICE_BASE_URL);
 
 export class TeacherService {
   private basePath = '/api/v1/teachers';
@@ -31,21 +34,21 @@ export class TeacherService {
     sortBy?: string;
     direction?: 'ASC' | 'DESC';
   }): Promise<Teacher[] | any> {
-    return apiClient.get<Teacher[] | any>(this.basePath, { params });
+    return teacherApiClient.get<Teacher[] | any>(this.basePath, { params });
   }
 
   /**
    * Get teacher by ID
    */
   async getById(id: number): Promise<Teacher> {
-    return apiClient.get<Teacher>(`${this.basePath}/${id}`);
+    return teacherApiClient.get<Teacher>(`${this.basePath}/${id}`);
   }
 
   /**
    * Get teacher by employee ID
    */
   async getByEmployeeId(employeeId: string): Promise<Teacher> {
-    return apiClient.get<Teacher>(`${this.basePath}/employee/${employeeId}`);
+    return teacherApiClient.get<Teacher>(`${this.basePath}/employee/${employeeId}`);
   }
 
   /**
@@ -56,9 +59,9 @@ export class TeacherService {
       email: data.email,
       employeeId: data.employeeId
     });
-    
+
     try {
-      const teacher = await apiClient.post<Teacher>(this.basePath, data);
+      const teacher = await teacherApiClient.post<Teacher>(this.basePath, data);
       logger.success('Teacher Service', `✅ Professor criado com sucesso: ${teacher.fullName}`, {
         id: teacher.id,
         employeeId: teacher.employeeId
@@ -78,9 +81,9 @@ export class TeacherService {
       fullName: data.fullName,
       email: data.email
     });
-    
+
     try {
-      const teacher = await apiClient.put<Teacher>(`${this.basePath}/${id}`, data);
+      const teacher = await teacherApiClient.put<Teacher>(`${this.basePath}/${id}`, data);
       logger.success('Teacher Service', `✅ Professor atualizado com sucesso: ${teacher.fullName}`, {
         id: teacher.id
       });
@@ -96,9 +99,9 @@ export class TeacherService {
    */
   async delete(id: number): Promise<ApiResponse> {
     logger.info('Teacher Service', `Tentando deletar professor ID: ${id}`);
-    
+
     try {
-      const response = await apiClient.delete<ApiResponse>(`${this.basePath}/${id}`);
+      const response = await teacherApiClient.delete<ApiResponse>(`${this.basePath}/${id}`);
       logger.success('Teacher Service', `✅ Professor deletado com sucesso ID: ${id}`);
       return response;
     } catch (error) {
@@ -111,21 +114,21 @@ export class TeacherService {
    * Get teachers by subject
    */
   async getBySubject(subject: string): Promise<Teacher[]> {
-    return apiClient.get<Teacher[]>(`${this.basePath}/subject/${subject}`);
+    return teacherApiClient.get<Teacher[]>(`${this.basePath}/subject/${subject}`);
   }
 
   /**
    * Get teachers by status
    */
   async getByStatus(status: TeacherStatus): Promise<Teacher[]> {
-    return apiClient.get<Teacher[]>(`${this.basePath}/status/${status}`);
+    return teacherApiClient.get<Teacher[]>(`${this.basePath}/status/${status}`);
   }
 
   /**
    * Get teachers hired in a date range
    */
   async getByHireDate(startDate: string, endDate: string): Promise<Teacher[]> {
-    return apiClient.get<Teacher[]>(`${this.basePath}/hired`, {
+    return teacherApiClient.get<Teacher[]>(`${this.basePath}/hired`, {
       params: { startDate, endDate },
     });
   }
@@ -136,35 +139,35 @@ export class TeacherService {
    * Get all teachers (management endpoint)
    */
   async getAllManagement(): Promise<Teacher[]> {
-    return apiClient.get<Teacher[]>(`${this.managementPath}/teachers`);
+    return teacherApiClient.get<Teacher[]>(`${this.managementPath}/teachers`);
   }
 
   /**
    * Get teacher by ID (management endpoint)
    */
   async getByIdManagement(id: number): Promise<Teacher> {
-    return apiClient.get<Teacher>(`${this.managementPath}/teachers/${id}`);
+    return teacherApiClient.get<Teacher>(`${this.managementPath}/teachers/${id}`);
   }
 
   /**
    * Create teacher (management endpoint)
    */
   async createManagement(data: CreateTeacherRequest): Promise<Teacher> {
-    return apiClient.post<Teacher>(`${this.managementPath}/teachers`, data);
+    return teacherApiClient.post<Teacher>(`${this.managementPath}/teachers`, data);
   }
 
   /**
    * Update teacher (management endpoint)
    */
   async updateManagement(id: number, data: UpdateTeacherRequest): Promise<Teacher> {
-    return apiClient.put<Teacher>(`${this.managementPath}/teachers/${id}`, data);
+    return teacherApiClient.put<Teacher>(`${this.managementPath}/teachers/${id}`, data);
   }
 
   /**
    * Delete teacher (management endpoint)
    */
   async deleteManagement(id: number): Promise<ApiResponse> {
-    return apiClient.delete<ApiResponse>(`${this.managementPath}/teachers/${id}`);
+    return teacherApiClient.delete<ApiResponse>(`${this.managementPath}/teachers/${id}`);
   }
 
   // ==================== Assignments ====================
@@ -173,7 +176,7 @@ export class TeacherService {
    * Assign teacher to a class
    */
   async createAssignment(data: CreateAssignmentRequest): Promise<TeacherAssignment> {
-    return apiClient.post<TeacherAssignment>(
+    return teacherApiClient.post<TeacherAssignment>(
       `${this.managementPath}/assignments`,
       undefined,
       { params: data }
@@ -184,7 +187,7 @@ export class TeacherService {
    * Get assignments by teacher
    */
   async getAssignmentsByTeacher(teacherId: number): Promise<TeacherAssignment[]> {
-    return apiClient.get<TeacherAssignment[]>(
+    return teacherApiClient.get<TeacherAssignment[]>(
       `${this.managementPath}/assignments/teacher/${teacherId}`
     );
   }
@@ -193,7 +196,7 @@ export class TeacherService {
    * Get assignments by class
    */
   async getAssignmentsByClass(classGroupId: number): Promise<TeacherAssignment[]> {
-    return apiClient.get<TeacherAssignment[]>(
+    return teacherApiClient.get<TeacherAssignment[]>(
       `${this.managementPath}/assignments/class/${classGroupId}`
     );
   }
@@ -207,7 +210,7 @@ export class TeacherService {
     teacherId: number,
     academicYear?: number
   ): Promise<TeacherSchedule[]> {
-    return apiClient.get<TeacherSchedule[]>(
+    return teacherApiClient.get<TeacherSchedule[]>(
       `${this.managementPath}/schedules/teacher/${teacherId}`,
       { params: academicYear ? { academicYear } : undefined }
     );
@@ -217,7 +220,7 @@ export class TeacherService {
    * Get class schedules
    */
   async getClassSchedules(classGroupId: number): Promise<TeacherSchedule[]> {
-    return apiClient.get<TeacherSchedule[]>(
+    return teacherApiClient.get<TeacherSchedule[]>(
       `${this.managementPath}/schedules/class/${classGroupId}`
     );
   }
@@ -229,7 +232,7 @@ export class TeacherService {
     teacherId: number,
     academicYear?: number
   ): Promise<TeacherSchedule[]> {
-    return apiClient.get<TeacherSchedule[]>(
+    return teacherApiClient.get<TeacherSchedule[]>(
       `${this.managementPath}/schedules/weekly/teacher/${teacherId}`,
       { params: academicYear ? { academicYear } : undefined }
     );
@@ -245,7 +248,7 @@ export class TeacherService {
     startDate: string,
     endDate: string
   ): Promise<PerformanceReport> {
-    return apiClient.post<PerformanceReport>(
+    return teacherApiClient.post<PerformanceReport>(
       `${this.managementPath}/performance-reports`,
       undefined,
       { params: { teacherId, startDate, endDate } }
@@ -258,7 +261,7 @@ export class TeacherService {
   async getPerformanceReportsByTeacher(
     teacherId: number
   ): Promise<PerformanceReport[]> {
-    return apiClient.get<PerformanceReport[]>(
+    return teacherApiClient.get<PerformanceReport[]>(
       `${this.managementPath}/performance-reports/teacher/${teacherId}`
     );
   }
@@ -270,7 +273,7 @@ export class TeacherService {
     startDate: string,
     endDate: string
   ): Promise<PerformanceReport[]> {
-    return apiClient.get<PerformanceReport[]>(
+    return teacherApiClient.get<PerformanceReport[]>(
       `${this.managementPath}/performance-reports/period`,
       { params: { startDate, endDate } }
     );
@@ -282,7 +285,7 @@ export class TeacherService {
    * Send assignment notification
    */
   async sendAssignmentNotification(assignmentId: number): Promise<ApiResponse> {
-    return apiClient.post<ApiResponse>(
+    return teacherApiClient.post<ApiResponse>(
       `${this.managementPath}/notifications/assignment/${assignmentId}`
     );
   }
@@ -291,7 +294,7 @@ export class TeacherService {
    * Get pending notifications
    */
   async getPendingNotifications(): Promise<any[]> {
-    return apiClient.get<any[]>(
+    return teacherApiClient.get<any[]>(
       `${this.managementPath}/notifications/pending`
     );
   }
@@ -307,7 +310,7 @@ export class TeacherService {
     startDate?: string;
     endDate?: string;
   }): Promise<any[]> {
-    return apiClient.get<any[]>(`${this.managementPath}/audit-logs`, {
+    return teacherApiClient.get<any[]>(`${this.managementPath}/audit-logs`, {
       params,
     });
   }
@@ -318,7 +321,7 @@ export class TeacherService {
    * Get dashboard overview
    */
   async getDashboardOverview(): Promise<DashboardOverview> {
-    return apiClient.get<DashboardOverview>(
+    return teacherApiClient.get<DashboardOverview>(
       `${this.managementPath}/dashboard/overview`
     );
   }
@@ -327,7 +330,7 @@ export class TeacherService {
    * Get performance summary
    */
   async getPerformanceSummary(): Promise<PerformanceSummary> {
-    return apiClient.get<PerformanceSummary>(
+    return teacherApiClient.get<PerformanceSummary>(
       `${this.managementPath}/dashboard/performance-summary`
     );
   }
@@ -336,7 +339,7 @@ export class TeacherService {
    * Health check for management service
    */
   async healthCheck(): Promise<ApiResponse> {
-    return apiClient.get<ApiResponse>(`${this.managementPath}/health`);
+    return teacherApiClient.get<ApiResponse>(`${this.managementPath}/health`);
   }
 }
 

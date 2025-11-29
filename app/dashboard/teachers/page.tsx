@@ -26,7 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TeacherForm } from "@/components/teacher-form"
 import { teacherService } from "@/services/teacher.service"
 import type { Teacher, TeacherStatus } from "@/types/teacher.types"
-import { Plus, Search, Pencil, Trash2, RefreshCw, GraduationCap } from "lucide-react"
+import { Plus, Search, Pencil, Trash2, RefreshCw, GraduationCap, ArrowLeft } from "lucide-react"
 
 function TeachersPageContent() {
   const router = useRouter()
@@ -237,6 +237,14 @@ function TeachersPageContent() {
   return (
     <div className="min-h-screen p-6">
       <div className="container mx-auto">
+        <Button
+          variant="ghost"
+          onClick={() => router.push('/dashboard')}
+          className="mb-4"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Voltar ao Dashboard
+        </Button>
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -461,7 +469,7 @@ function TeachersPageContent() {
 
 export default function TeachersPage() {
   return (
-    <ProtectedRoute allowedRoles={['ADMIN', 'TEACHER']}>
+    <ProtectedRoute allowedRoles={['ADMIN']}>
       <TeachersPageContent />
     </ProtectedRoute>
   )

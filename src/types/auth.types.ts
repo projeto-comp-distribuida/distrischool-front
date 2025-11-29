@@ -48,6 +48,8 @@ export interface User {
   updatedAt: string;
   auth0Id?: string; // Auth0 integration
   lastLogin?: string;
+  studentId?: number | null; // Student ID from student service (if user is a student)
+  teacherId?: number | null; // Teacher ID from teacher service (if user is a teacher)
 }
 
 export interface ApiResponse<T = any> {
@@ -69,6 +71,19 @@ export interface ResetPasswordRequest {
 
 export interface VerifyEmailRequest {
   token: string;
+}
+
+export interface UpdateProfileRequest {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  documentNumber?: string;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
 }
 
 
