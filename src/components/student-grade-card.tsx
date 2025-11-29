@@ -98,3 +98,4 @@ export function StudentGradeCard({ classEntity, subject, grades, average }: Stud
 }
 
 
+
