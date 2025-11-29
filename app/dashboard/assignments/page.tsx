@@ -31,7 +31,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Plus, UserPlus, Trash2, Users, Search, RefreshCw, UserCheck, Loader2, Briefcase } from 'lucide-react';
+import { Plus, UserPlus, Trash2, Users, Search, RefreshCw, UserCheck, Loader2, Briefcase, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Assignment {
