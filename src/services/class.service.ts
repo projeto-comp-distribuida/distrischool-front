@@ -2,8 +2,8 @@ import { ApiClient } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
 import { ClassEntity, CreateClassRequest, UpdateClassRequest } from '@/types/class.types';
 
-// Use port 8084 for classes service
-const CLASSES_API_BASE_URL = process.env.NEXT_PUBLIC_CLASSES_API_URL || 'http://192.168.1.7:8084';
+// Use API Gateway for classes service
+const CLASSES_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://distrischool.ddns.net';
 const classesApiClient = new ApiClient(CLASSES_API_BASE_URL);
 
 export class ClassService {

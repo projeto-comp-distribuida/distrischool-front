@@ -2,8 +2,8 @@ import { ApiClient } from '@/lib/api-client';
 import { logger } from '@/lib/logger';
 import { Attendance, CreateAttendanceRequest, UpdateAttendanceRequest } from '@/types/attendance.types';
 
-// Use port 8084 for attendance service
-const ATTENDANCE_API_BASE_URL = process.env.NEXT_PUBLIC_CLASSES_API_URL || 'http://192.168.1.7:8084';
+// Use API Gateway for attendance service
+const ATTENDANCE_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://distrischool.ddns.net';
 const attendanceApiClient = new ApiClient(ATTENDANCE_API_BASE_URL);
 
 export class AttendanceService {

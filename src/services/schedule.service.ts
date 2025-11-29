@@ -3,8 +3,8 @@ import { logger } from '@/lib/logger';
 import { Schedule, CreateScheduleRequest, UpdateScheduleRequest } from '@/types/schedule.types';
 import { PaginatedResponse } from '@/types/student.types';
 
-// Use port 8084 for schedules service
-const SCHEDULES_API_BASE_URL = process.env.NEXT_PUBLIC_CLASSES_API_URL || 'http://192.168.1.7:8084';
+// Use API Gateway for schedules service
+const SCHEDULES_API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://distrischool.ddns.net';
 const schedulesApiClient = new ApiClient(SCHEDULES_API_BASE_URL);
 
 export class ScheduleService {
