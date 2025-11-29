@@ -23,6 +23,22 @@ COPY . .
 # Uncomment the following line in case you want to disable telemetry during the build.
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Build arguments for Next.js public environment variables
+# These are embedded at build time, so they must be set during docker build
+ARG NEXT_PUBLIC_API_URL=http://distrischool.ddns.net
+ARG NEXT_PUBLIC_AUTH_SERVICE_URL=http://distrischool.ddns.net/api/v1/auth
+ARG NEXT_PUBLIC_STUDENT_SERVICE_URL=http://distrischool.ddns.net/api/v1/students
+ARG NEXT_PUBLIC_TEACHER_SERVICE_URL=http://distrischool.ddns.net/api/teachers
+ARG NEXT_PUBLIC_TEACHER_MANAGEMENT_SERVICE_URL=http://distrischool.ddns.net/api/v1/teacher-management
+ARG NEXT_PUBLIC_NOTIFICATION_SERVICE_URL=http://distrischool.ddns.net/api/v1/notifications
+
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_AUTH_SERVICE_URL=$NEXT_PUBLIC_AUTH_SERVICE_URL
+ENV NEXT_PUBLIC_STUDENT_SERVICE_URL=$NEXT_PUBLIC_STUDENT_SERVICE_URL
+ENV NEXT_PUBLIC_TEACHER_SERVICE_URL=$NEXT_PUBLIC_TEACHER_SERVICE_URL
+ENV NEXT_PUBLIC_TEACHER_MANAGEMENT_SERVICE_URL=$NEXT_PUBLIC_TEACHER_MANAGEMENT_SERVICE_URL
+ENV NEXT_PUBLIC_NOTIFICATION_SERVICE_URL=$NEXT_PUBLIC_NOTIFICATION_SERVICE_URL
+
 RUN corepack enable pnpm && pnpm run build
 
 # Stage 3: Production image, copy all the files and run next
