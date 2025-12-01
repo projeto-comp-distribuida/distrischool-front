@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { BookOpen, Users, GraduationCap, LogOut, RefreshCw, BookMarked, UserCheck, BarChart3 } from "lucide-react"
+import { BookOpen, Users, GraduationCap, LogOut, RefreshCw, BookMarked } from "lucide-react"
 import { NotificationCenter } from "@/components/notification-center"
 
 export default function DashboardPage() {
@@ -230,37 +230,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Additional Admin Options */}
-        {userRole === 'ADMIN' && (
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold mb-4">Outros</h2>
-            <div className="grid md:grid-cols-2 gap-4">
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/assignments')}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2">
-                    <UserCheck className="h-5 w-5 text-primary" />
-                    <CardTitle className="text-base">Atribuições</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Button className="w-full" size="sm" variant="outline">Acessar</Button>
-                </CardContent>
-              </Card>
-
-              <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/dashboard/reports/performance')}>
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5 text-primary" />
-                    <CardTitle className="text-base">Relatórios</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Button className="w-full" size="sm" variant="outline">Acessar</Button>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        )}
 
         {/* User Info Card */}
         <Card className="mt-8">
